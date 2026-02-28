@@ -1,13 +1,137 @@
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
+body, html { margin: 0; padding: 0; height: 100%; }
 
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
+}
+/* .booth-container {
+  text-align: center;
+  background: linear-gradient(135deg, #fce4ec, #e1f5fe);
+  padding: 20px;
+  border-radius: 12px;
+  width: 80vw;          /chiếm 80% chiều rộng cửa sổ /
+  max-width: 1200px;    / giới hạn tối đa /
+  height: auto;
+  margin: auto;
+  font-family: "Arial", sans-serif;
+  min-height: 60vh;     / chiếm ít nhất 60% chiều cao cửa sổ /
+} */
+.booth-container {
+display: flex; flex-direction: column; justify-content: flex-star; /* căn giữa theo chiều dọc */ align-items: center; /* căn giữa theo chiều ngang */ min-height: 100vh; /* chiếm toàn bộ chiều cao cửa sổ */ width: 100vw; /* chiếm toàn bộ chiều rộng cửa sổ */ background: linear-gradient(135deg, #fce4ec, #e1f5fe); font-family: "Arial", sans-serif; text-align: center; padding: 20px; box-sizing: border-box;
+}
+
+.booth-title {
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.booth-countdown {
+  font-size: 20px;
+  color: #555;
+  margin-bottom: 15px;
+}
+
+.booth-main {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.booth-side {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.circle-btn {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  border: none;
+  background: #fff;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.booth-photo img {
+  border-radius: 8px;
+  border: 4px solid #fff;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  margin: 0 20px;
+}
+
+.booth-footer {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+}
+
+.rect-btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  color: #fff;
+}
+
+.gallery {
+  background-color: #2196f3;
+}
+
+.start {
+  background-color: #4caf50;
+}
+
+.retake {
+  background-color: #f44336;
+}
+/* Responsive adjustments */
+.image-list {
+  position: fixed;       /* cố định ở cuối màn hình */
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.8); /* nền mờ */
+  padding: 10px;
+  box-shadow: 0 -2px 8px rgba(0,0,0,0.2);
+}
+
+.image-box {
+  position: relative;
+  width: 150px;
+  height: 100px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.image-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.actions {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  display: flex;
+  gap: 5px;
+}
+
+.actions .delete,
+.actions .check {
+  background: #fff;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
 }
