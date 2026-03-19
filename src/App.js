@@ -7,7 +7,7 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
 
   const [devices, setDevices] = useState([]);
   const [selectedDevice, setSelectedDevice] = useState("");
-  const [stream, setStream] = useState(null);
+
   const [photos, setPhotos] = useState([]);
   const [selectedPhotos, setSelectedPhotos] = useState([]);
   const [settings, setSettings] = useState({
@@ -20,17 +20,7 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
 
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
-  const overlayStyle = {
-    position: "absolute",
-    top: "50%",
-    left: "50%",
-    transform: "translate(-50%, -50%)",
-    fontSize: "80px",
-    fontWeight: "bold",
-    backgroundColor: "rgba(0,0,0,0.3)",
-    padding: "20px",
-    borderRadius: "10px",
-  };
+
 
   // Liệt kê camera
   useEffect(() => {
@@ -109,9 +99,9 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
   const PHOTO_WIDTH = 600;
   const PHOTO_HEIGHT = 400;
   const capturePhoto = () => {
-    const video = videoRef.current;
+
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
+
 
     canvas.width = PHOTO_WIDTH;
     canvas.height = PHOTO_HEIGHT;
