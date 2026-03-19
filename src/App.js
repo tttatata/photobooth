@@ -122,18 +122,7 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
     }
   };
 
-  // // In ảnh
-  // const printPhoto = (photo) => {
-  //   const printWindow = window.open("", "_blank");
-  //   printWindow.document.write(`
-  //     <html>
-  //       <body style="text-align:center;">
-  //         <img src="${photo}" style="max-width:100%;"/>
-  //         <script>window.print();</script>
-  //       </body>
-  //     </html>
-  //   `);
-  // };
+ 
 
 
 
