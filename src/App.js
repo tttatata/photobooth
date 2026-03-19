@@ -37,6 +37,8 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
   async function clgcapturePhoto() {
     // logic chụp và lưu ảnh
     console.log("Ảnh đã chụp và lưu!");
+    console.log(stream);
+
   }
 
   const captureWithSettings = async () => {
