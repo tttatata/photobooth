@@ -7,7 +7,7 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
 
   const [devices, setDevices] = useState([]);
   const [selectedDevice, setSelectedDevice] = useState("");
-
+  const [stream, setStream] = useState(null);
   const [photos, setPhotos] = useState([]);
   const [selectedPhotos, setSelectedPhotos] = useState([]);
   const [settings, setSettings] = useState({
@@ -122,7 +122,18 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
     }
   };
 
- 
+  // // In ảnh
+  // const printPhoto = (photo) => {
+  //   const printWindow = window.open("", "_blank");
+  //   printWindow.document.write(`
+  //     <html>
+  //       <body style="text-align:center;">
+  //         <img src="${photo}" style="max-width:100%;"/>
+  //         <script>window.print();</script>
+  //       </body>
+  //     </html>
+  //   `);
+  // };
 
 
 
