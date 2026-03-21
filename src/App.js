@@ -100,7 +100,7 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
   }
 
   // --- GOOGLE DRIVE & LOGIN ---
-  const CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID;
+  const CLIENT_ID = "648863666701-i5uh4f3odgd6et44hasvn8tvlo8g2125.apps.googleusercontent.com";
 
   const handleGoogleLogin = () => {
     if (!window.google) {
