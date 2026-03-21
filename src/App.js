@@ -88,6 +88,20 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
     });
   }, []);
   const [countdownValue, setCountdownValue] = useState(null);
+
+  // Tự động chèn script tải thư viện Google khi chạy ứng dụng
+  useEffect(() => {
+    const script = document.createElement("script");
+    script.src = "https://accounts.google.com/gsi/client";
+    script.async = true;
+    script.defer = true;
+    document.head.appendChild(script);
+
+    return () => {
+      document.head.removeChild(script);
+    };
+  }, []);
+
   const [intervalValue, setIntervalValue] = useState(null);
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(null);
   const [currentSessionPhotos, setCurrentSessionPhotos] = useState([]);
