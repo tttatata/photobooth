@@ -100,7 +100,7 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
   }
 
   // --- GOOGLE DRIVE & LOGIN ---
-  const CLIENT_ID = "THAY_BẰNG_CLIENT_ID_CỦA_BẠN.apps.googleusercontent.com"; // <-- BẠN CẦN THAY MÃ NÀY!
+  const CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID;
 
   const handleGoogleLogin = () => {
     if (!window.google) {
