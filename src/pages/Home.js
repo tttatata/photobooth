@@ -7,7 +7,7 @@ const Home = ({ onLogin, onStartOffline, onGoToAdmin }) => {
   const [showPassword, setShowPassword] = useState(false);
 
   const handleOpenAdmin = () => {
-    if (localStorage.getItem("token")) {
+    if (localStorage.getItem("token") && localStorage.getItem("userRole") === "admin") {
       onGoToAdmin(); // Nếu đã đăng nhập trước đó, vào thẳng Admin
     } else {
       setShowAdminLogin(true); // Ngược lại, mở cửa sổ đăng nhập
@@ -28,9 +28,14 @@ const Home = ({ onLogin, onStartOffline, onGoToAdmin }) => {
       const data = await response.json();
 
       if (data.success) {
-        // Đăng nhập thành công, có thể lưu token vào localStorage nếu cần
-        localStorage.setItem("token", data.token);
-        onGoToAdmin();
+        // Kiểm tra xem tài khoản đăng nhập có thực sự là admin không
+        if (data.user.role === 'admin') {
+          localStorage.setItem("token", data.token);
+          localStorage.setItem("userRole", data.user.role);
+          onGoToAdmin();
+        } else {
+          alert("Tài khoản của bạn không có quyền Quản trị viên!");
+        }
       } else {
         alert(data.message || "Sai tài khoản hoặc mật khẩu!");
       }

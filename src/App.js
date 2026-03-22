@@ -227,6 +227,7 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
             const backendData = await backendRes.json();
             if (backendData.success) {
               localStorage.setItem("token", backendData.token); // Lưu token từ Server để giữ đăng nhập
+              localStorage.setItem("userRole", backendData.user.role); // Lưu phân quyền từ Server
               navigate("/app"); // Chuyển vào màn hình chụp
             } else {
               alert(backendData.message || "Không thể đăng nhập vào hệ thống.");
@@ -923,7 +924,7 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
       <Route 
         path="/admin" 
         element={
-          localStorage.getItem("token") ? (
+          localStorage.getItem("token") && localStorage.getItem("userRole") === "admin" ? (
             <Admin onBack={() => navigate("/")} />
           ) : (
             <Navigate to="/" replace />

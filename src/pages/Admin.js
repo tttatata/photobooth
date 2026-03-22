@@ -134,6 +134,7 @@ const Admin = ({ onBack }) => {
 
   const handleLogout = () => {
     localStorage.removeItem("token"); // Xóa Token đã lưu từ Server
+    localStorage.removeItem("userRole"); // Xóa Role đã lưu
     onBack(); // Điều hướng về Home
   };
 
