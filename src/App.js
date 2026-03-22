@@ -144,13 +144,22 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
   const createDriveFolder = async (folderName) => {
     if (!accessToken) return;
     try {
-      const metadata = { name: folderName, mimeType: "application/vnd.google-apps.folder" };
+      // Bổ sung tham số parents: ["root"] để thư mục hiện ngay ở ngoài My Drive
+      const metadata = { name: folderName, mimeType: "application/vnd.google-apps.folder", parents: ["root"] };
       const res = await fetch("https://www.googleapis.com/drive/v3/files?fields=id,name,webViewLink", {
         method: "POST",
         headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
         body: JSON.stringify(metadata),
       });
       const data = await res.json();
+
+      // Bắt lỗi từ Google API (VD: hết dung lượng, lỗi token...)
+      if (!res.ok) {
+        console.error("Lỗi tạo thư mục từ Google API:", data);
+        alert("Lỗi khi tạo thư mục trên Drive: " + (data.error?.message || "Lỗi không xác định"));
+        return;
+      }
+
       if (data.id) {
         // Mở quyền truy cập công khai cho thư mục để ai cũng xem được khi quét QR
         const permRes = await fetch(`https://www.googleapis.com/drive/v3/files/${data.id}/permissions`, {
@@ -263,6 +272,12 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
         method: "POST", headers: { Authorization: `Bearer ${accessToken}` }, body: form,
       });
       const fileData = await uploadRes.json();
+
+      // Kiểm tra xem upload ảnh có thành công không
+      if (!uploadRes.ok) {
+        console.error("Lỗi API upload ảnh:", fileData);
+        return null;
+      }
 
       // 2. Mở quyền công khai để ai quét QR cũng xem được ảnh
       await fetch(`https://www.googleapis.com/drive/v3/files/${fileData.id}/permissions`, {
