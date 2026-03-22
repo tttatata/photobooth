@@ -1,3 +1,6 @@
+app.get("/", (req, res) => {
+  res.json({ message: "🎉 Chào mừng đến với Backend VietBooth API!" });
+});
 require("dotenv").config();
 const app = require("./src/app");
 const connectDB = require("./src/config/db");
@@ -13,6 +16,9 @@ const startServer = async () => {
   app.listen(PORT, () => {
     console.log(`🚀 Server đang chạy tại http://localhost:${PORT}`);
   });
-};
+};app.get("/", (req, res) => {
+  res.json({ message: "🎉 Chào mừng đến với Backend VietBooth API!" });
+});
+
 
 startServer();
