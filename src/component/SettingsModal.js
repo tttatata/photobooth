@@ -1,6 +1,6 @@
 import React from "react";
 
-const SettingsModal = ({ show, onClose, devices, selectedDevice, setSelectedDevice, startCamera, previewVideoRef, stream, settings, setSettings, selectDirectory, directoryHandle, accessToken, driveFolders, createDriveFolder, showFolderQr }) => {
+const SettingsModal = ({ show, onClose, devices, selectedDevice, setSelectedDevice, startCamera, previewVideoRef, stream, settings, setSettings, selectDirectory, directoryHandle, accessToken, driveFolders, createDriveFolder, showFolderQr, onOpenDrivePicker }) => {
   if (!show) return null;
   return (
     <div style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", background: "rgba(0,0,0,0.5)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1000 }}>
@@ -46,24 +46,15 @@ const SettingsModal = ({ show, onClose, devices, selectedDevice, setSelectedDevi
             </div>
             <label style={{ fontWeight: "bold", fontSize: "14px", display: "block", marginBottom: "8px" }}>📁 Chọn thư mục Drive lưu ảnh sự kiện:</label>
             <div style={{ display: "flex", gap: "10px" }}>
-              <select 
-                value={settings.driveFolderId || ""} 
-                onChange={(e) => setSettings({ ...settings, driveFolderId: e.target.value })}
-                style={{ flex: 1, padding: "8px", borderRadius: "5px", border: "1px solid #ccc" }}
-              >
-                <option value="">Thư mục gốc (Mặc định)</option>
-                {driveFolders && driveFolders.map(folder => (
-                  <option key={folder.id} value={folder.id}>📁 {folder.name}</option>
-                ))}
-              </select>
+              <button className="hover-btn" onClick={onOpenDrivePicker} style={{ flex: 1, padding: "10px", backgroundColor: "#fff", color: "#374151", border: "1px solid #d1d5db", borderRadius: "5px", cursor: "pointer", fontWeight: "bold", fontSize: "14px", textAlign: "left", display: "flex", alignItems: "center", gap: "10px" }}>
+                <span style={{ fontSize: "18px" }}>📂</span>
+                {settings.driveFolderId && driveFolders.find(f => f.id === settings.driveFolderId) ? driveFolders.find(f => f.id === settings.driveFolderId).name : "Nhấn để chọn thư mục Drive..."}
+              </button>
               {settings.driveFolderId && (
                 <button className="hover-btn" onClick={() => showFolderQr(settings.driveFolderId)} style={{ padding: "8px 15px", backgroundColor: "#8b5cf6", color: "white", border: "none", borderRadius: "5px", cursor: "pointer", fontWeight: "bold", fontSize: "14px", whiteSpace: "nowrap" }}>
                   📱 Xem QR
                 </button>
               )}
-              <button className="hover-btn" onClick={() => { const name = prompt("Nhập tên thư mục sự kiện mới (VD: VietBooth_2203):"); if (name) createDriveFolder(name); }} style={{ padding: "8px 15px", backgroundColor: "#3b82f6", color: "white", border: "none", borderRadius: "5px", cursor: "pointer", fontWeight: "bold", fontSize: "14px", whiteSpace: "nowrap" }}>
-                ➕ Tạo mới
-              </button>
             </div>
           </div>
         )}

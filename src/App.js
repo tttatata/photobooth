@@ -8,6 +8,7 @@ import LayoutModal from "./component/LayoutModal";
 import FrameModal from "./component/FrameModal";
 import QrModal from "./component/QrModal";
 import GalleryModal from "./component/GalleryModal";
+import DrivePickerModal from "./component/DrivePickerModal";
 import { BrowserRouter as Router, Routes, Route, useNavigate, Navigate } from "react-router-dom";
 
 // Danh sách các Filter CSS miễn phí (Sử dụng CSS3 Filters siêu mượt, không cần cài thêm thư viện)
@@ -32,6 +33,7 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
   const [showFrameModal, setShowFrameModal] = useState(false);
   const [showGalleryModal, setShowGalleryModal] = useState(false);
   const [showFolderQrModal, setShowFolderQrModal] = useState(false);
+  const [showDrivePickerModal, setShowDrivePickerModal] = useState(false);
   const [folderQrLink, setFolderQrLink] = useState("");
 
   const [accessToken, setAccessToken] = useState(null); // Token Google Drive
@@ -788,9 +790,33 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
       
       <div className="app-header">
         <h1 className="app-title">📸 VietBooth Studio</h1>
-        <button onClick={() => navigate("/")} className="hover-btn" style={{ padding: "10px 20px", background: "#f3f4f6", color: "#374151", border: "none", borderRadius: "20px", fontWeight: "bold", cursor: "pointer" }}>
-          🏠 Về trang chủ
-        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: "15px" }}>
+          {/* Hiển thị tên người dùng */}
+          {localStorage.getItem("userName") && (
+            <span style={{ fontWeight: "bold", color: "#374151", fontSize: "16px" }}>👋 {localStorage.getItem("userName")}</span>
+          )}
+          <button onClick={() => navigate("/")} className="hover-btn" style={{ padding: "10px 20px", background: "#f3f4f6", color: "#374151", border: "none", borderRadius: "20px", fontWeight: "bold", cursor: "pointer" }}>
+            🏠 Về trang chủ
+          </button>
+          {/* Nút Xóa ảnh */}
+          <button onClick={() => {
+            if (window.confirm("Bạn có chắc chắn muốn xóa toàn bộ ảnh đang lưu tạm thời không?")) {
+              setPhotos([]);
+              setRawPhotos([]);
+            }
+          }} className="hover-btn" style={{ padding: "10px 20px", background: "#fee2e2", color: "#ef4444", border: "none", borderRadius: "20px", fontWeight: "bold", cursor: "pointer" }}>
+            🗑️ Xóa ảnh
+          </button>
+          {/* Nút Đăng xuất (Hiển thị nếu có token) */}
+          {localStorage.getItem("token") && (
+            <button onClick={() => {
+              localStorage.removeItem("token"); localStorage.removeItem("userRole"); localStorage.removeItem("userName");
+              navigate("/");
+            }} className="hover-btn" style={{ padding: "10px 20px", background: "#ef4444", color: "#fff", border: "none", borderRadius: "20px", fontWeight: "bold", cursor: "pointer" }}>
+              🚪 Đăng xuất
+            </button>
+          )}
+        </div>
       </div>
 
       {/* --- MÀN HÌNH CHỤP ẢNH (CAMERA MODE) --- */}
@@ -907,7 +933,8 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
       </div>
 
       {/* Các Modals đã được tách ra file riêng để code gọn gàng */}
-      <SettingsModal show={showSettingsModal} onClose={() => setShowSettingsModal(false)} devices={devices} selectedDevice={selectedDevice} setSelectedDevice={setSelectedDevice} startCamera={startCamera} previewVideoRef={previewVideoRef} stream={stream} settings={settings} setSettings={setSettings} selectDirectory={selectDirectory} directoryHandle={directoryHandle} accessToken={accessToken} driveFolders={driveFolders} createDriveFolder={createDriveFolder} showFolderQr={showSelectedFolderQr} />
+      <SettingsModal show={showSettingsModal} onClose={() => setShowSettingsModal(false)} devices={devices} selectedDevice={selectedDevice} setSelectedDevice={setSelectedDevice} startCamera={startCamera} previewVideoRef={previewVideoRef} stream={stream} settings={settings} setSettings={setSettings} selectDirectory={selectDirectory} directoryHandle={directoryHandle} accessToken={accessToken} driveFolders={driveFolders} createDriveFolder={createDriveFolder} showFolderQr={showSelectedFolderQr} onOpenDrivePicker={() => setShowDrivePickerModal(true)} />
+      <DrivePickerModal show={showDrivePickerModal} onClose={() => setShowDrivePickerModal(false)} driveFolders={driveFolders} onSelectFolder={(id) => setSettings({ ...settings, driveFolderId: id })} onCreateFolder={createDriveFolder} selectedFolderId={settings.driveFolderId} />
       <LayoutModal show={showLayoutModal} onClose={() => setShowLayoutModal(false)} settings={settings} setSettings={setSettings} />
       <FrameModal show={showFrameModal} onClose={() => setShowFrameModal(false)} settings={settings} setSettings={setSettings} sampleFrames={customFrames} />
       <GalleryModal show={showGalleryModal} onClose={() => setShowGalleryModal(false)} photos={photos} rawPhotos={rawPhotos} selectedPhotos={selectedPhotos} toggleSelect={toggleSelect} printPhoto={printPhoto} onPrintAny={() => setShowPrintModal(true)} />
