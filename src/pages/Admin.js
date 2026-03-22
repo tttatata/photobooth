@@ -20,6 +20,12 @@ const Admin = ({ onBack }) => {
     }
   }, [activeTab]);
 
+  // Hàm lấy token từ localStorage
+  const getAuthHeaders = () => ({
+    "Content-Type": "application/json",
+    "Authorization": `Bearer ${localStorage.getItem("token")}`
+  });
+
   const fetchFrames = async () => {
     try {
       const response = await fetch(`${process.env.REACT_APP_API_URL || ""}/api/frames`);
@@ -43,7 +49,8 @@ const Admin = ({ onBack }) => {
     if (!newFrameName || !newFrameImage) return alert("Vui lòng nhập tên và chọn file ảnh (PNG)!");
     try {
       const response = await fetch(`${process.env.REACT_APP_API_URL || ""}/api/frames`, {
-        method: "POST", headers: { "Content-Type": "application/json" },
+        method: "POST", 
+        headers: getAuthHeaders(),
         body: JSON.stringify({ name: newFrameName, image: newFrameImage })
       });
       const data = await response.json();
@@ -58,7 +65,10 @@ const Admin = ({ onBack }) => {
   const handleDeleteFrame = async (id) => {
     if (!window.confirm("Bạn có chắc muốn xóa frame này?")) return;
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL || ""}/api/frames/${id}`, { method: "DELETE" });
+      const response = await fetch(`${process.env.REACT_APP_API_URL || ""}/api/frames/${id}`, { 
+        method: "DELETE",
+        headers: getAuthHeaders()
+      });
       const data = await response.json();
       if (data.success) fetchFrames();
     } catch (error) { console.error("Lỗi xóa frame:", error); }
@@ -96,7 +106,11 @@ const Admin = ({ onBack }) => {
       const style = systemStyles[i];
       const imageBase64 = generateSampleFrame(style.id, "vertical-3"); // Khởi tạo mặc định ở định dạng phổ biến nhất (3 ảnh dọc)
       try {
-        await fetch(`${process.env.REACT_APP_API_URL || ""}/api/frames`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: style.label, image: imageBase64 }) });
+        await fetch(`${process.env.REACT_APP_API_URL || ""}/api/frames`, { 
+          method: "POST", 
+          headers: getAuthHeaders(), 
+          body: JSON.stringify({ name: style.label, image: imageBase64 }) 
+        });
       } catch (error) { console.error("Lỗi nạp frame:", error); }
     }
     alert("🎉 Đã nạp thành công toàn bộ Frame mặc định vào hệ thống!");
@@ -105,7 +119,9 @@ const Admin = ({ onBack }) => {
 
   const fetchUsers = async () => {
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL || ""}/api/users`);
+      const response = await fetch(`${process.env.REACT_APP_API_URL || ""}/api/users`, {
+        headers: getAuthHeaders()
+      });
       const data = await response.json();
       if (data.success) {
         setUsers(data.users);
