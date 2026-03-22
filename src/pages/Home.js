@@ -6,6 +6,9 @@ const Home = ({ onLogin, onStartOffline, onGoToAdmin }) => {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
+  const isLoggedIn = !!localStorage.getItem("token");
+  const userName = localStorage.getItem("userName") || "Người dùng";
+
   const handleOpenAdmin = () => {
     if (localStorage.getItem("token") && localStorage.getItem("userRole") === "admin") {
       onGoToAdmin(); // Nếu đã đăng nhập trước đó, vào thẳng Admin
@@ -32,6 +35,7 @@ const Home = ({ onLogin, onStartOffline, onGoToAdmin }) => {
         if (data.user.role === 'admin') {
           localStorage.setItem("token", data.token);
           localStorage.setItem("userRole", data.user.role);
+          localStorage.setItem("userName", data.user.username);
           onGoToAdmin();
         } else {
           alert("Tài khoản của bạn không có quyền Quản trị viên!");
@@ -45,6 +49,13 @@ const Home = ({ onLogin, onStartOffline, onGoToAdmin }) => {
     }
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("userRole");
+    localStorage.removeItem("userName");
+    window.location.reload(); // Tải lại trang để cập nhật giao diện
+  };
+
   return (
     <div style={{ fontFamily: "Arial, sans-serif", backgroundColor: "#f3f4f6", minHeight: "100vh", display: "flex", flexDirection: "column" }}>
       <header style={{ backgroundColor: "#fff", padding: "15px 40px", display: "flex", justifyContent: "space-between", alignItems: "center", boxShadow: "0 2px 10px rgba(0,0,0,0.1)" }}>
@@ -56,13 +67,25 @@ const Home = ({ onLogin, onStartOffline, onGoToAdmin }) => {
           >
             👨‍💻 Admin Panel
           </button>
-          <button 
-            onClick={onLogin}
-            style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 20px", border: "1px solid #d1d5db", backgroundColor: "#fff", borderRadius: "30px", cursor: "pointer", fontWeight: "bold", boxShadow: "0 2px 4px rgba(0,0,0,0.05)" }}
-          >
-            <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google" style={{ width: "20px" }} />
-            Đăng nhập bằng Google
-          </button>
+          {isLoggedIn ? (
+            <div style={{ display: "flex", alignItems: "center", gap: "15px" }}>
+              <span style={{ fontWeight: "bold", color: "#374151" }}>👋 {userName}</span>
+              <button 
+                onClick={handleLogout}
+                style={{ padding: "10px 20px", border: "1px solid #ef4444", backgroundColor: "#fee2e2", color: "#ef4444", borderRadius: "30px", cursor: "pointer", fontWeight: "bold" }}
+              >
+                🚪 Đăng xuất
+              </button>
+            </div>
+          ) : (
+            <button 
+              onClick={onLogin}
+              style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 20px", border: "1px solid #d1d5db", backgroundColor: "#fff", borderRadius: "30px", cursor: "pointer", fontWeight: "bold", boxShadow: "0 2px 4px rgba(0,0,0,0.05)" }}
+            >
+              <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google" style={{ width: "20px" }} />
+              Đăng nhập bằng Google
+            </button>
+          )}
         </div>
       </header>
 
@@ -75,12 +98,26 @@ const Home = ({ onLogin, onStartOffline, onGoToAdmin }) => {
         </p>
         
         <div style={{ display: "flex", gap: "20px", marginBottom: "70px" }}>
-          <button onClick={onLogin} style={{ padding: "15px 40px", fontSize: "18px", fontWeight: "bold", color: "#fff", backgroundColor: "#4f46e5", border: "none", borderRadius: "50px", cursor: "pointer", boxShadow: "0 10px 20px rgba(79, 70, 229, 0.3)" }}>
-            🚀 Bắt đầu ngay (Cần Đăng nhập)
-          </button>
-          <button onClick={onStartOffline} style={{ padding: "15px 40px", fontSize: "18px", fontWeight: "bold", color: "#374151", backgroundColor: "#e5e7eb", border: "none", borderRadius: "50px", cursor: "pointer" }}>
-            Chụp Offline (Lưu máy)
-          </button>
+          {isLoggedIn ? (
+            <>
+              <button onClick={onStartOffline} style={{ padding: "15px 40px", fontSize: "18px", fontWeight: "bold", color: "#fff", backgroundColor: "#4f46e5", border: "none", borderRadius: "50px", cursor: "pointer", boxShadow: "0 10px 20px rgba(79, 70, 229, 0.3)" }}>
+                🚀 Vào Phòng Chụp Ngay
+              </button>
+              <button onClick={onLogin} style={{ padding: "15px 40px", fontSize: "18px", fontWeight: "bold", color: "#374151", backgroundColor: "#e5e7eb", border: "none", borderRadius: "50px", cursor: "pointer", display: "flex", alignItems: "center", gap: "10px" }}>
+                <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google" style={{ width: "20px" }} />
+                Kết nối lại Google Drive
+              </button>
+            </>
+          ) : (
+            <>
+              <button onClick={onLogin} style={{ padding: "15px 40px", fontSize: "18px", fontWeight: "bold", color: "#fff", backgroundColor: "#4f46e5", border: "none", borderRadius: "50px", cursor: "pointer", boxShadow: "0 10px 20px rgba(79, 70, 229, 0.3)" }}>
+                🚀 Đăng nhập Google để Bắt đầu
+              </button>
+              <button onClick={onStartOffline} style={{ padding: "15px 40px", fontSize: "18px", fontWeight: "bold", color: "#374151", backgroundColor: "#e5e7eb", border: "none", borderRadius: "50px", cursor: "pointer" }}>
+                Chụp Offline (Lưu máy)
+              </button>
+            </>
+          )}
         </div>
 
         {/* --- Phần Hiển thị Ưu điểm --- */}

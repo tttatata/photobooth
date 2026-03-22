@@ -9,6 +9,7 @@ const Admin = ({ onBack }) => {
   const [frames, setFrames] = useState([]);
   const [newFrameName, setNewFrameName] = useState("");
   const [newFrameImage, setNewFrameImage] = useState("");
+  const [isLoadingFrames, setIsLoadingFrames] = useState(false);
 
   // Tự động gọi API lấy danh sách người dùng khi mở tab 'users'
   useEffect(() => {
@@ -28,12 +29,15 @@ const Admin = ({ onBack }) => {
   });
 
   const fetchFrames = async () => {
+    setIsLoadingFrames(true); // Bật trạng thái Loading
     try {
       const response = await fetch(`${process.env.REACT_APP_API_URL || ""}/api/frames`);
       const data = await response.json();
       if (data.success) setFrames(data.frames);
     } catch (error) {
       console.error("Lỗi lấy danh sách frame:", error);
+    } finally {
+      setIsLoadingFrames(false); // Tắt trạng thái Loading khi hoàn tất
     }
   };
 
@@ -135,6 +139,7 @@ const Admin = ({ onBack }) => {
   const handleLogout = () => {
     localStorage.removeItem("token"); // Xóa Token đã lưu từ Server
     localStorage.removeItem("userRole"); // Xóa Role đã lưu
+    localStorage.removeItem("userName"); // Xóa Username
     onBack(); // Điều hướng về Home
   };
 
@@ -222,7 +227,9 @@ const Admin = ({ onBack }) => {
                 <h3 style={{ margin: 0, color: "#374151" }}>📚 Danh sách Frame hiện có</h3>
                 <button onClick={handleLoadSystemFrames} style={{ padding: "8px 15px", background: "#f59e0b", color: "white", border: "none", borderRadius: "6px", cursor: "pointer", fontWeight: "bold", fontSize: "14px" }}>📥 Nạp thư viện Frame có sẵn</button>
               </div>
-              {frames.length === 0 ? (
+            {isLoadingFrames ? (
+                <p style={{ color: "#4f46e5", textAlign: "center", padding: "20px 0", fontWeight: "bold" }}>⏳ Đang tải danh sách từ MongoDB...</p>
+              ) : frames.length === 0 ? (
                 <p style={{ color: "#6b7280", textAlign: "center", padding: "20px 0" }}>Chưa có frame nào. Hãy tải lên frame đầu tiên của bạn!</p>
               ) : (
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "20px" }}>

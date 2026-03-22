@@ -228,6 +228,7 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
             if (backendData.success) {
               localStorage.setItem("token", backendData.token); // Lưu token từ Server để giữ đăng nhập
               localStorage.setItem("userRole", backendData.user.role); // Lưu phân quyền từ Server
+              localStorage.setItem("userName", backendData.user.username); // Lưu tên tài khoản hiển thị
               navigate("/app"); // Chuyển vào màn hình chụp
             } else {
               alert(backendData.message || "Không thể đăng nhập vào hệ thống.");
