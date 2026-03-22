@@ -1,8 +1,7 @@
 require("dotenv").config();
 
-// Đường dẫn này trỏ tới file chạy server của bạn (giả sử bạn để trong thư mục backend/server.js)
-const app = require("../backend/server"); 
+// Vercel sẽ tự động tìm vào file này khi có request gọi '/api/...'
+const app = require("../backend/server");
 
-console.log("🚀 Backend API đã chạy và sẵn sàng nhận request!");
-
+console.log("🚀 Serverless Backend đang nhận request!");
 module.exports = app;

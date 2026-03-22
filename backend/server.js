@@ -7,12 +7,12 @@ const PORT = process.env.PORT || 5000;
 // Mở kết nối Database
 connectDB();
 
-// Chỉ mở port khi chạy trên máy tính (local). Khi đẩy lên Vercel, nó sẽ tự bỏ qua.
+// Chỉ mở cổng lắng nghe khi chạy trên máy tính (Local)
 if (process.env.NODE_ENV !== "production") {
   app.listen(PORT, () => {
     console.log(`🚀 Server đang chạy tại http://localhost:${PORT}`);
   });
 }
 
-// BẮT BUỘC: Export app ra để Vercel có thể nhận diện và khởi chạy Backend
+// BẮT BUỘC: Phải export app ra để Vercel có thể nhận diện và khởi chạy
 module.exports = app;
