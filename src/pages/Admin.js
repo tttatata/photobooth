@@ -18,6 +18,7 @@ const Admin = ({ onBack }) => {
     if (activeTab === 'frames') {
       fetchFrames();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
 
   // Hàm lấy token từ localStorage
