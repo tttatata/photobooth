@@ -7,7 +7,7 @@ const QrModal = ({ show, onClose, qrLink, title = "🎉 Ảnh của bạn đã x
         <h2 style={{ fontSize: "28px", margin: "0 0 10px 0", color: "#111827" }}>{title}</h2>
         <p style={{ color: "#4b5563", marginBottom: "30px" }}>{description}</p>
         <div style={{ background: "#f3f4f6", padding: "20px", borderRadius: "16px", display: "inline-block", marginBottom: "30px" }}>
-          <img src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(qrLink)}`} alt="QR Code" style={{ display: "block" }} />
+          <img src={`${process.env.REACT_APP_QR_API_URL || "https://api.qrserver.com/v1/create-qr-code/"}?size=250x250&data=${encodeURIComponent(qrLink)}`} alt="QR Code" style={{ display: "block" }} />
         </div>
         <button onClick={onClose} style={{ padding: "15px 40px", fontSize: "18px", fontWeight: "bold", background: "#ef4444", color: "white", border: "none", borderRadius: "30px", cursor: "pointer", width: "100%" }}>
           Đóng

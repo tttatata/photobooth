@@ -65,7 +65,7 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
   useEffect(() => {
     const fetchCustomFrames = async () => {
       try {
-        const response = await fetch("/api/frames");
+        const response = await fetch(`${process.env.REACT_APP_API_URL || ""}/api/frames`);
         const data = await response.json();
         if (data.success) {
           setCustomFrames(data.frames.map(f => ({ id: f._id, src: f.image, label: f.name })));
@@ -195,7 +195,7 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
   }
 
   // --- GOOGLE DRIVE & LOGIN ---
-  const CLIENT_ID = "648863666701-i5uh4f3odgd6et44hasvn8tvlo8g2125.apps.googleusercontent.com";
+  const CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID;
 
   const handleGoogleLogin = () => {
     if (!window.google) {
@@ -218,7 +218,7 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
             const userInfo = await userInfoRes.json();
             
             // 2. Gửi thông tin này lên Backend để kiểm tra và lưu vào MongoDB
-            const backendRes = await fetch("/api/auth/google", {
+            const backendRes = await fetch(`${process.env.REACT_APP_API_URL || ""}/api/auth/google`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ email: userInfo.email, name: userInfo.name })
@@ -798,7 +798,7 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
         {settings.useDrive && settings.driveFolderId && driveFolders.find(f => f.id === settings.driveFolderId) && (
           <div className="floating-qr" style={{ background: "#fff", padding: "15px", borderRadius: "16px", boxShadow: "0 10px 30px rgba(0,0,0,0.2)", textAlign: "center", border: "4px solid #4f46e5" }}>
             <div style={{ fontSize: "16px", fontWeight: "900", color: "#4f46e5", marginBottom: "10px", textTransform: "uppercase" }}>📸 Album Sự kiện</div>
-            <img src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(driveFolders.find(f => f.id === settings.driveFolderId)?.webViewLink || `https://drive.google.com/drive/folders/${settings.driveFolderId}?usp=sharing`)}`} alt="Album QR" style={{ width: "150px", height: "150px", display: "block", margin: "0 auto", borderRadius: "8px" }} />
+            <img src={`${process.env.REACT_APP_QR_API_URL || "https://api.qrserver.com/v1/create-qr-code/"}?size=150x150&data=${encodeURIComponent(driveFolders.find(f => f.id === settings.driveFolderId)?.webViewLink || `https://drive.google.com/drive/folders/${settings.driveFolderId}?usp=sharing`)}`} alt="Album QR" style={{ width: "150px", height: "150px", display: "block", margin: "0 auto", borderRadius: "8px" }} />
             <div style={{ fontSize: "13px", color: "#4b5563", marginTop: "10px", fontWeight: "bold" }}>Rê chuột vào để phóng to</div>
           </div>
         )}
