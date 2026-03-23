@@ -38,6 +38,14 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
 
   const [accessToken, setAccessToken] = useState(null); // Token Google Drive
 
+  // State kiểm tra giao diện Mobile / Desktop
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 800);
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 800);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   const [devices, setDevices] = useState([]);
   const [selectedDevice, setSelectedDevice] = useState("");
   const [stream, setStream] = useState(null);
@@ -93,6 +101,13 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
     }
   }, [stream, showSettingsModal]);
 
+  // Đảm bảo Stream Camera luôn gắn đúng vào VideoRef khi chuyển đổi Mobile/Desktop
+  useEffect(() => {
+    if (videoRef.current && stream) {
+      videoRef.current.srcObject = stream;
+    }
+  }, [stream, isMobile]);
+
   // Tự động quét và kết nối máy ảnh khi cắm cáp thiết bị mới
   useEffect(() => {
     const handleDeviceChange = async () => {
@@ -116,6 +131,15 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
         if (externalCam) {
           setSelectedDevice(externalCam.deviceId);
           startCamera(externalCam.deviceId, true);
+        } else if (videoDevices.length > 0) {
+          // Nếu dùng trên điện thoại hoặc không có máy ảnh ngoài, ưu tiên tìm camera trước (front) hoặc lấy cái đầu tiên
+          const mobileCam = videoDevices.find(device => 
+            device.label.toLowerCase().includes("front") || 
+            device.label.toLowerCase().includes("trước")
+          );
+          const camToUse = mobileCam || videoDevices[0];
+          setSelectedDevice(camToUse.deviceId);
+          startCamera(camToUse.deviceId, true);
         }
         tempStream.getTracks().forEach(track => track.stop());
       } catch (error) {
@@ -542,7 +566,13 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
     const id = deviceIdToStart || selectedDevice;
     if (!id) return;
     navigator.mediaDevices
-      .getUserMedia({ video: { deviceId: id } })
+      .getUserMedia({ 
+        video: { 
+          deviceId: id,
+          width: { ideal: 1920 }, // Ưu tiên yêu cầu độ phân giải ngang
+          height: { ideal: 1080 }
+        } 
+      })
       .then((s) => {
         setStream(s);
         if (videoRef.current) {
@@ -574,10 +604,14 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
       },
       "vertical-3": {
         width: 1200, height: 1800,
+        width: 1200, height: 1800, // Đảm bảo kích thước này bằng đúng kích thước gốc file PNG của bạn
         boxes: [
           { dx: 180, dy: 30, dw: 840, dh: 560 },
           { dx: 180, dy: 620, dw: 840, dh: 560 },
           { dx: 180, dy: 1210, dw: 840, dh: 560 }
+          { dx: /* Điền X ô 1 */ 180, dy: /* Điền Y ô 1 */ 30, dw: /* Rộng */ 840, dh: /* Cao */ 560 },
+          { dx: /* Điền X ô 2 */ 180, dy: /* Điền Y ô 2 */ 620, dw: /* Rộng */ 840, dh: /* Cao */ 560 },
+          { dx: /* Điền X ô 3 */ 180, dy: /* Điền Y ô 3 */ 1210, dw: /* Rộng */ 840, dh: /* Cao */ 560 }
         ]
       },
       "grid-4": {
@@ -679,7 +713,23 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
       canvas.height = PHOTO_HEIGHT;
       const ctx = canvas.getContext("2d");
 
-      ctx.drawImage(video, 0, 0, PHOTO_WIDTH, PHOTO_HEIGHT);
+      // Xử lý cắt ảnh (Crop) chuẩn xác như object-fit: cover để không bị méo khi chụp trên điện thoại
+      const videoRatio = video.videoWidth / video.videoHeight;
+      const canvasRatio = PHOTO_WIDTH / PHOTO_HEIGHT;
+      let drawWidth = PHOTO_WIDTH;
+      let drawHeight = PHOTO_HEIGHT;
+      let offsetX = 0;
+      let offsetY = 0;
+
+      if (videoRatio > canvasRatio) {
+        drawWidth = PHOTO_HEIGHT * videoRatio;
+        offsetX = (PHOTO_WIDTH - drawWidth) / 2;
+      } else {
+        drawHeight = PHOTO_WIDTH / videoRatio;
+        offsetY = (PHOTO_HEIGHT - drawHeight) / 2;
+      }
+
+      ctx.drawImage(video, offsetX, offsetY, drawWidth, drawHeight);
       
       const dataUrl = canvas.toDataURL("image/png");
       
@@ -723,8 +773,19 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
     setShowPrintModal(true);      // mở modal
   };
 
+  // Hàm lật camera (chuyển đổi giữa các thiết bị camera trước/sau)
+  const handleFlipCamera = () => {
+    if (devices.length < 2) return;
+    const currentIndex = devices.findIndex(d => d.deviceId === selectedDevice);
+    const nextIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % devices.length;
+    const nextDevice = devices[nextIndex];
+    
+    setSelectedDevice(nextDevice.deviceId);
+    startCamera(nextDevice.deviceId);
+  };
+
   const renderApp = () => (
-    <div className="booth-container" style={{ minHeight: "100vh", backgroundColor: "#f9fafb", display: "flex", flexDirection: "column", alignItems: "center", padding: "20px", fontFamily: "'Inter', sans-serif" }}>
+    <div className="booth-container" style={{ minHeight: "100vh", backgroundColor: isMobile ? "#111827" : "#f9fafb", display: "flex", flexDirection: "column", alignItems: "center", padding: isMobile ? "10px" : "20px", fontFamily: "'Inter', sans-serif" }}>
       <style>{`
         .hover-btn {
           transition: all 0.3s ease-in-out;
@@ -751,7 +812,7 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
           margin-bottom: 20px;
         }
         .app-title {
-          font-size: 32px;
+          font-size: ${isMobile ? '20px' : '32px'};
           font-weight: 900;
           margin: 0;
           background: linear-gradient(135deg, #4f46e5 0%, #ec4899 100%);
@@ -823,7 +884,9 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
           100% { opacity: 1; }
         }
         .filter-sidebar::-webkit-scrollbar {
-          width: 6px;
+          width: ${isMobile ? '0px' : '6px'};
+          height: ${isMobile ? '0px' : 'auto'};
+          display: ${isMobile ? 'none' : 'block'};
         }
         .filter-sidebar::-webkit-scrollbar-thumb {
           background: #d1d5db;
@@ -850,13 +913,13 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
       
       <div className="app-header">
         <h1 className="app-title">📸 VietBooth Studio</h1>
-        <div style={{ display: "flex", alignItems: "center", gap: "15px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: isMobile ? "5px" : "15px" }}>
           {/* Hiển thị tên người dùng */}
-          {localStorage.getItem("userName") && (
+          {localStorage.getItem("userName") && !isMobile && (
             <span style={{ fontWeight: "bold", color: "#374151", fontSize: "16px" }}>👋 {localStorage.getItem("userName")}</span>
           )}
-          <button onClick={() => navigate("/")} className="hover-btn" style={{ padding: "10px 20px", background: "#f3f4f6", color: "#374151", border: "none", borderRadius: "20px", fontWeight: "bold", cursor: "pointer" }}>
-            🏠 Về trang chủ
+          <button onClick={() => navigate("/")} className="hover-btn" style={{ padding: isMobile ? "8px 12px" : "10px 20px", fontSize: isMobile ? "12px" : "14px", background: isMobile ? "#374151" : "#f3f4f6", color: isMobile ? "#fff" : "#374151", border: "none", borderRadius: "20px", fontWeight: "bold", cursor: "pointer" }}>
+            🏠 {isMobile ? "Home" : "Về trang chủ"}
           </button>
           {/* Nút Xóa ảnh */}
           <button onClick={() => {
@@ -864,23 +927,99 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
               setPhotos([]);
               setRawPhotos([]);
             }
-          }} className="hover-btn" style={{ padding: "10px 20px", background: "#fee2e2", color: "#ef4444", border: "none", borderRadius: "20px", fontWeight: "bold", cursor: "pointer" }}>
-            🗑️ Xóa ảnh
+          }} className="hover-btn" style={{ padding: isMobile ? "8px 12px" : "10px 20px", fontSize: isMobile ? "12px" : "14px", background: "#fee2e2", color: "#ef4444", border: "none", borderRadius: "20px", fontWeight: "bold", cursor: "pointer" }}>
+            🗑️ {isMobile ? "Xóa" : "Xóa ảnh"}
           </button>
           {/* Nút Đăng xuất (Hiển thị nếu có token) */}
           {localStorage.getItem("token") && (
             <button onClick={() => {
               localStorage.removeItem("token"); localStorage.removeItem("userRole"); localStorage.removeItem("userName");
               navigate("/");
-            }} className="hover-btn" style={{ padding: "10px 20px", background: "#ef4444", color: "#fff", border: "none", borderRadius: "20px", fontWeight: "bold", cursor: "pointer" }}>
-              🚪 Đăng xuất
+            }} className="hover-btn" style={{ padding: isMobile ? "8px 12px" : "10px 20px", fontSize: isMobile ? "12px" : "14px", background: "#ef4444", color: "#fff", border: "none", borderRadius: "20px", fontWeight: "bold", cursor: "pointer" }}>
+              🚪 {isMobile ? "Thoát" : "Đăng xuất"}
             </button>
           )}
         </div>
       </div>
 
-      {/* --- MÀN HÌNH CHỤP ẢNH (CAMERA MODE) --- */}
-      <div className="main-card">
+      {/* --- PHÂN NHÁNH GIAO DIỆN MÁY TÍNH / ĐIỆN THOẠI --- */}
+      {isMobile ? (
+        /* --- 📱 GIAO DIỆN MOBILE TÙY CHỈNH MỚI TẠO --- */
+        <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: "15px", flex: 1 }}>
+          {/* Video Preview Mobile */}
+          <div className="video-wrapper" style={{ width: "100%", aspectRatio: `${PHOTO_WIDTH} / ${PHOTO_HEIGHT}`, backgroundColor: "#1f2937", border: "4px solid #374151", borderRadius: "16px", display: "flex", justifyContent: "center", alignItems: "center", position: "relative" }}>
+            {stream && <div className="live-badge">LIVE</div>}
+            
+            {/* Nút Lật Camera (Chỉ hiện khi có từ 2 camera trở lên) */}
+            {stream && devices.length > 1 && (
+              <button 
+                onClick={handleFlipCamera} 
+                style={{ position: "absolute", bottom: "15px", right: "15px", background: "rgba(0,0,0,0.5)", color: "white", border: "2px solid rgba(255,255,255,0.5)", borderRadius: "50%", width: "45px", height: "45px", fontSize: "22px", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 15, cursor: "pointer", backdropFilter: "blur(5px)", boxShadow: "0 4px 10px rgba(0,0,0,0.3)" }}
+              >
+                🔄
+              </button>
+            )}
+
+            {!stream && (
+              <div style={{ position: "absolute", textAlign: "center", color: "#9ca3af", zIndex: 5 }}>
+                <div style={{ fontSize: "40px", marginBottom: "5px" }}>📷</div>
+                <h3 style={{ margin: 0, fontSize: "16px" }}>Chưa có Camera</h3>
+              </div>
+            )}
+            <video ref={videoRef} autoPlay muted playsInline style={{ width: "100%", height: "100%", filter: settings.filter, display: stream ? "block" : "none", objectFit: "cover" }} />
+            {isCapturing && <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", background: "rgba(0,0,0,0.8)", color: "white", padding: "12px 20px", borderRadius: "20px", fontSize: "18px", fontWeight: "bold", zIndex: 20 }}>📸 Đang chụp...</div>}
+            {currentPhotoIndex !== null && <div style={{ position: "absolute", top: "10px", left: "50%", transform: "translateX(-50%)", background: "rgba(0,0,0,0.7)", color: "white", padding: "6px 12px", borderRadius: "15px", fontSize: "12px", fontWeight: "bold", zIndex: 10 }}>Chụp: {currentPhotoIndex} {typeof currentPhotoIndex === 'number' ? `/ ${settings.photoCount}` : ''}</div>}
+            {countdownValue !== null && <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", fontSize: "60px", color: "white", textShadow: "0 2px 10px rgba(0,0,0,0.5)", fontWeight: "900", zIndex: 10 }}>{countdownValue}</div>}
+            {intervalValue !== null && <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", fontSize: "60px", color: "white", textShadow: "0 2px 10px rgba(0,0,0,0.5)", fontWeight: "900", zIndex: 10 }}>{intervalValue}</div>}
+          </div>
+
+          {/* Danh sách Filters Cuộn Ngang */}
+          <div style={{ display: "flex", overflowX: "auto", gap: "10px", paddingBottom: "5px", scrollbarWidth: "none" }}>
+            {AVAILABLE_FILTERS.map(f => (
+              <div key={f.id} className="filter-btn" onClick={() => setSettings({ ...settings, filter: f.filter })} style={{ flex: "0 0 auto", padding: "8px 16px", background: settings.filter === f.filter ? "#e0e7ff" : "#374151", color: settings.filter === f.filter ? "#4f46e5" : "#e5e7eb", borderRadius: "20px", fontSize: "13px", display: "flex", alignItems: "center", gap: "6px" }}>
+                <span>{f.icon}</span> {f.label}
+              </div>
+            ))}
+          </div>
+
+          {/* Hệ thống Nút điều khiển dạng Lưới (Grid) */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+            <button onClick={() => setShowSettingsModal(true)} style={{ padding: "12px", background: "#374151", color: "#60a5fa", border: "none", borderRadius: "12px", fontWeight: "bold", fontSize: "14px" }}>⚙️ Cài đặt</button>
+            <button onClick={() => setShowLayoutModal(true)} style={{ padding: "12px", background: "#374151", color: "#fbbf24", border: "none", borderRadius: "12px", fontWeight: "bold", fontSize: "14px" }}>📐 Layout</button>
+            <button onClick={() => setShowFrameModal(true)} style={{ padding: "12px", background: "#374151", color: "#a78bfa", border: "none", borderRadius: "12px", fontWeight: "bold", fontSize: "14px" }}>🖼️ Frame</button>
+            <button onClick={() => setShowGalleryModal(true)} style={{ padding: "12px", background: "#374151", color: "#34d399", border: "none", borderRadius: "12px", fontWeight: "bold", fontSize: "14px" }}>📂 Gallery</button>
+          </div>
+
+          {/* Nút xem QR (Thu gọn thành Button thay vì trôi nổi chiếm diện tích trên màn hình bé) */}
+          {settings.useDrive && settings.driveFolderId && driveFolders.find(f => f.id === settings.driveFolderId) && (
+            <button onClick={() => showSelectedFolderQr(settings.driveFolderId)} style={{ width: "100%", padding: "12px", background: "#1f2937", color: "#f9fafb", border: "1px solid #4b5563", borderRadius: "12px", fontWeight: "bold" }}>
+              📲 Xem QR Album Sự Kiện
+            </button>
+          )}
+
+          {/* Nút bấm Chụp ảnh Khổng lồ */}
+          {stream && (
+            <div style={{ marginTop: "auto", paddingTop: "10px", paddingBottom: "20px" }}>
+              {!isSessionActive ? (
+                <div style={{ display: "flex", gap: "10px" }}>
+                  <button onClick={captureWithSettings} style={{ flex: 1, padding: "16px", fontSize: "18px", fontWeight: "900", color: "#fff", background: "linear-gradient(135deg, #ff0844 0%, #ffb199 100%)", border: "none", borderRadius: "30px", boxShadow: "0 10px 20px rgba(255, 8, 68, 0.3)", textTransform: "uppercase" }}>
+                    {settings.interval === 0 && currentSessionPhotos.length > 0 ? "📸 CHỤP TIẾP" : "📸 BẮT ĐẦU"}
+                  </button>
+                  {settings.interval === 0 && currentSessionPhotos.length > 0 && (
+                    <button onClick={cancelSession} style={{ padding: "0 25px", fontSize: "16px", fontWeight: "bold", color: "#ef4444", background: "#fee2e2", border: "none", borderRadius: "30px" }}>❌</button>
+                  )}
+                </div>
+              ) : (
+                <button onClick={cancelSession} style={{ width: "100%", padding: "16px", fontSize: "18px", fontWeight: "900", color: "#fff", background: "#ef4444", border: "none", borderRadius: "30px", boxShadow: "0 10px 20px rgba(239, 68, 68, 0.3)", textTransform: "uppercase" }}>
+                  ❌ HỦY CHỤP
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      ) : (
+        /* --- 💻 GIAO DIỆN DESKTOP (MÁY TÍNH) GIỮ NGUYÊN BẢN CŨ --- */
+        <div className="main-card">
         
         {/* Mã QR Album hiển thị cố định trên màn hình */}
         {settings.useDrive && settings.driveFolderId && driveFolders.find(f => f.id === settings.driveFolderId) && (
@@ -991,6 +1130,7 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
           )}
         </div>
       </div>
+      )}
 
       {/* Các Modals đã được tách ra file riêng để code gọn gàng */}
       <SettingsModal show={showSettingsModal} onClose={() => setShowSettingsModal(false)} devices={devices} selectedDevice={selectedDevice} setSelectedDevice={setSelectedDevice} startCamera={startCamera} previewVideoRef={previewVideoRef} stream={stream} settings={settings} setSettings={setSettings} selectDirectory={selectDirectory} directoryHandle={directoryHandle} accessToken={accessToken} driveFolders={driveFolders} createDriveFolder={createDriveFolder} showFolderQr={showSelectedFolderQr} onOpenDrivePicker={() => setShowDrivePickerModal(true)} />
