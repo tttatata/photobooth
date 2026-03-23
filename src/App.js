@@ -1,5 +1,5 @@
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import PrintModal from "./component/printer.js";
 import Home from "./pages/Home";
 import Admin from "./pages/Admin";
