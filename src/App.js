@@ -40,6 +40,7 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
 
   // State kiểm tra giao diện Mobile / Desktop
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 800);
+
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 800);
     window.addEventListener("resize", handleResize);
@@ -49,6 +50,7 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
   const [devices, setDevices] = useState([]);
   const [selectedDevice, setSelectedDevice] = useState("");
   const [stream, setStream] = useState(null);
+  const [isCameraLoading, setIsCameraLoading] = useState(false); // Trạng thái loading khi đổi Camera
   const [photos, setPhotos] = useState([]);
   const [rawPhotos, setRawPhotos] = useState([]);
   const [selectedPhotos, setSelectedPhotos] = useState([]);
@@ -132,12 +134,13 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
           setSelectedDevice(externalCam.deviceId);
           startCamera(externalCam.deviceId, true);
         } else if (videoDevices.length > 0) {
-          // Nếu dùng trên điện thoại hoặc không có máy ảnh ngoài, ưu tiên tìm camera trước (front) hoặc lấy cái đầu tiên
+          // Nếu dùng trên điện thoại, ưu tiên tìm camera sau (back/environment) để có chất lượng tốt nhất
           const mobileCam = videoDevices.find(device => 
-            device.label.toLowerCase().includes("front") || 
-            device.label.toLowerCase().includes("trước")
+            device.label.toLowerCase().includes("back") || 
+            device.label.toLowerCase().includes("sau") ||
+            device.label.toLowerCase().includes("environment")
           );
-          const camToUse = mobileCam || videoDevices[0];
+          const camToUse = mobileCam || videoDevices[videoDevices.length - 1]; // Thường thiết bị cuối cùng trong danh sách là camera sau
           setSelectedDevice(camToUse.deviceId);
           startCamera(camToUse.deviceId, true);
         }
@@ -562,24 +565,35 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
   };
 ///////////////////////////////////////////////
   // Bắt đầu camera
-  const startCamera = (deviceIdToStart) => {
+  const startCamera = async (deviceIdToStart) => {
     const id = deviceIdToStart || selectedDevice;
     if (!id) return;
-    navigator.mediaDevices
-      .getUserMedia({ 
+
+    setIsCameraLoading(true);
+
+    // Tắt luồng camera hiện tại (nếu có) trước khi bật camera mới để giải phóng phần cứng
+    if (videoRef.current && videoRef.current.srcObject) {
+      const tracks = videoRef.current.srcObject.getTracks();
+      tracks.forEach(track => track.stop());
+    }
+
+    try {
+      const s = await navigator.mediaDevices.getUserMedia({ 
         video: { 
-          deviceId: id,
+          deviceId: { exact: id }, // Bắt buộc dùng exact để đổi chính xác sang thiết bị mới
           width: { ideal: 1920 }, // Ưu tiên yêu cầu độ phân giải ngang
           height: { ideal: 1080 }
         } 
-      })
-      .then((s) => {
-        setStream(s);
-        if (videoRef.current) {
-          videoRef.current.srcObject = s;
-        }
-      })
-      .catch((err) => console.error("Lỗi truy cập camera:", err));
+      });
+      setStream(s);
+      if (videoRef.current) {
+        videoRef.current.srcObject = s;
+      }
+    } catch (err) {
+      console.error("Lỗi truy cập camera:", err);
+    } finally {
+      setIsCameraLoading(false);
+    }
   };
 
   const generateCollage = async (images, currentSettings) => {
@@ -769,17 +783,6 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
     setShowPrintModal(true);      // mở modal
   };
 
-  // Hàm lật camera (chuyển đổi giữa các thiết bị camera trước/sau)
-  const handleFlipCamera = () => {
-    if (devices.length < 2) return;
-    const currentIndex = devices.findIndex(d => d.deviceId === selectedDevice);
-    const nextIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % devices.length;
-    const nextDevice = devices[nextIndex];
-    
-    setSelectedDevice(nextDevice.deviceId);
-    startCamera(nextDevice.deviceId);
-  };
-
   const renderApp = () => (
     <div className="booth-container" style={{ minHeight: "100vh", backgroundColor: isMobile ? "#111827" : "#f9fafb", display: "flex", flexDirection: "column", alignItems: "center", padding: isMobile ? "10px" : "20px", fontFamily: "'Inter', sans-serif" }}>
       <style>{`
@@ -879,6 +882,11 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
           50% { opacity: 0.4; }
           100% { opacity: 1; }
         }
+        @keyframes spinLoading {
+          0% { transform: rotate(0deg) scale(1); }
+          50% { transform: rotate(180deg) scale(1.2); }
+          100% { transform: rotate(360deg) scale(1); }
+        }
         .filter-sidebar::-webkit-scrollbar {
           width: ${isMobile ? '0px' : '6px'};
           height: ${isMobile ? '0px' : 'auto'};
@@ -946,23 +954,20 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
           <div className="video-wrapper" style={{ width: "100%", aspectRatio: `${PHOTO_WIDTH} / ${PHOTO_HEIGHT}`, backgroundColor: "#1f2937", border: "4px solid #374151", borderRadius: "16px", display: "flex", justifyContent: "center", alignItems: "center", position: "relative" }}>
             {stream && <div className="live-badge">LIVE</div>}
             
-            {/* Nút Lật Camera (Chỉ hiện khi có từ 2 camera trở lên) */}
-            {stream && devices.length > 1 && (
-              <button 
-                onClick={handleFlipCamera} 
-                style={{ position: "absolute", bottom: "15px", right: "15px", background: "rgba(0,0,0,0.5)", color: "white", border: "2px solid rgba(255,255,255,0.5)", borderRadius: "50%", width: "45px", height: "45px", fontSize: "22px", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 15, cursor: "pointer", backdropFilter: "blur(5px)", boxShadow: "0 4px 10px rgba(0,0,0,0.3)" }}
-              >
-                🔄
-              </button>
-            )}
-
-            {!stream && (
+            {!stream && !isCameraLoading && (
               <div style={{ position: "absolute", textAlign: "center", color: "#9ca3af", zIndex: 5 }}>
                 <div style={{ fontSize: "40px", marginBottom: "5px" }}>📷</div>
                 <h3 style={{ margin: 0, fontSize: "16px" }}>Chưa có Camera</h3>
               </div>
             )}
-            <video ref={videoRef} autoPlay muted playsInline style={{ width: "100%", height: "100%", filter: settings.filter, display: stream ? "block" : "none", objectFit: "cover" }} />
+
+            {isCameraLoading && (
+              <div style={{ position: "absolute", textAlign: "center", color: "#60a5fa", zIndex: 5 }}>
+                <div style={{ fontSize: "40px", marginBottom: "10px", animation: "spinLoading 1.5s ease-in-out infinite" }}>⏳</div>
+                <h3 style={{ margin: 0, fontSize: "16px" }}>Đang kết nối...</h3>
+              </div>
+            )}
+            <video ref={videoRef} autoPlay muted playsInline style={{ width: "100%", height: "100%", filter: settings.filter, display: stream ? "block" : "none", objectFit: "cover", opacity: isCameraLoading ? 0.3 : 1, transition: "opacity 0.3s" }} />
             {isCapturing && <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", background: "rgba(0,0,0,0.8)", color: "white", padding: "12px 20px", borderRadius: "20px", fontSize: "18px", fontWeight: "bold", zIndex: 20 }}>📸 Đang chụp...</div>}
             {currentPhotoIndex !== null && <div style={{ position: "absolute", top: "10px", left: "50%", transform: "translateX(-50%)", background: "rgba(0,0,0,0.7)", color: "white", padding: "6px 12px", borderRadius: "15px", fontSize: "12px", fontWeight: "bold", zIndex: 10 }}>Chụp: {currentPhotoIndex} {typeof currentPhotoIndex === 'number' ? `/ ${settings.photoCount}` : ''}</div>}
             {countdownValue !== null && <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", fontSize: "60px", color: "white", textShadow: "0 2px 10px rgba(0,0,0,0.5)", fontWeight: "900", zIndex: 10 }}>{countdownValue}</div>}
@@ -1064,7 +1069,7 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
             <div className="video-wrapper" style={{ width: `${PHOTO_WIDTH}px`, height: `${PHOTO_HEIGHT}px`, backgroundColor: "#e5e7eb", display: "flex", justifyContent: "center", alignItems: "center" }}>
               {stream && <div className="live-badge">LIVE</div>}
               
-              {!stream && (
+              {!stream && !isCameraLoading && (
                 <div style={{ position: "absolute", textAlign: "center", color: "#6b7280", zIndex: 5, padding: "20px" }}>
                   <div style={{ fontSize: "60px", marginBottom: "15px" }}>📷</div>
                   <h3 style={{ margin: 0, fontSize: "24px", color: "#374151" }}>Chưa có Camera</h3>
@@ -1072,7 +1077,14 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
                 </div>
               )}
 
-              <video ref={videoRef} autoPlay muted playsInline style={{ width: "100%", height: "100%", filter: settings.filter, display: stream ? "block" : "none", objectFit: "cover" }} />
+              {isCameraLoading && (
+                <div style={{ position: "absolute", textAlign: "center", color: "#4f46e5", zIndex: 5, padding: "20px" }}>
+                  <div style={{ fontSize: "60px", marginBottom: "15px", animation: "spinLoading 1.5s ease-in-out infinite" }}>⏳</div>
+                  <h3 style={{ margin: 0, fontSize: "24px", color: "#374151" }}>Đang kết nối Camera...</h3>
+                </div>
+              )}
+
+              <video ref={videoRef} autoPlay muted playsInline style={{ width: "100%", height: "100%", filter: settings.filter, display: stream ? "block" : "none", objectFit: "cover", opacity: isCameraLoading ? 0.3 : 1, transition: "opacity 0.3s" }} />
               {/* Overlays */}
               {isCapturing && (
                 <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", background: "rgba(0,0,0,0.8)", color: "white", padding: "20px 40px", borderRadius: "30px", fontSize: "30px", fontWeight: "bold", zIndex: 20, boxShadow: "0 10px 30px rgba(0,0,0,0.3)", backdropFilter: "blur(5px)" }}>
