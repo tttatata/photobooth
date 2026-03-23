@@ -96,6 +96,40 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
   }, []);
   const [countdownValue, setCountdownValue] = useState(null);
 
+  // Hàm quét và tự động kết nối máy ảnh Sony (đặc biệt qua cáp Type-C / USB Streaming)
+  const scanAndSelectSonyCamera = async () => {
+    try {
+      // Bật luồng phụ tạm thời để trình duyệt cấp quyền và đọc được Tên thật (Label)
+      const tempStream = await navigator.mediaDevices.getUserMedia({ video: true });
+      
+      const allDevices = await navigator.mediaDevices.enumerateDevices();
+      const videoDevices = allDevices.filter(device => device.kind === "videoinput");
+      setDevices(videoDevices);
+
+      // Tìm thiết bị có tên chứa từ khóa (hỗ trợ USB Streaming qua Type-C)
+      const externalCam = videoDevices.find(device => {
+        const label = device.label.toLowerCase();
+        return label.includes("sony") || 
+               label.includes("imaging edge") || 
+               label.includes("usb streaming") || 
+               label.includes("usb video") || 
+               label.includes("webcam");
+      });
+
+      if (externalCam) {
+        setSelectedDevice(externalCam.deviceId);
+        startCamera(externalCam.deviceId, true);
+        alert(`✅ Đã kết nối thành công máy ảnh: ${externalCam.label}`);
+      } else {
+        alert("❌ Không tìm thấy máy ảnh. Vui lòng kiểm tra cáp Type-C và bật chế độ 'USB Streaming' trên máy ảnh!");
+      }
+      tempStream.getTracks().forEach(track => track.stop());
+    } catch (error) {
+      console.error("Lỗi quét máy ảnh:", error);
+      alert("Lỗi: Không thể truy cập Camera!");
+    }
+  };
+
   // Tự động chèn script tải thư viện Google khi chạy ứng dụng
   useEffect(() => {
     const script = document.createElement("script");

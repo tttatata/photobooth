@@ -1,7 +1,6 @@
 import React from "react";
 
-const SettingsModal = ({ show, onClose, devices, selectedDevice, setSelectedDevice, startCamera, previewVideoRef, stream, settings, setSettings, selectDirectory, directoryHandle, accessToken, driveFolders, createDriveFolder, showFolderQr, onOpenDrivePicker }) => {
-  if (!show) return null;
+const SettingsModal = ({ show, onClose, devices, selectedDevice, setSelectedDevice, startCamera, rcsi
   return (
     <div style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", background: "rgba(0,0,0,0.5)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1000 }}>
       <div style={{ position: "relative", background: "#fff", padding: "30px", borderRadius: "12px", width: "90%", maxWidth: "500px", display: "flex", flexDirection: "column", gap: "15px", boxShadow: "0 10px 25px rgba(0,0,0,0.2)" }}>
@@ -9,10 +8,9 @@ const SettingsModal = ({ show, onClose, devices, selectedDevice, setSelectedDevi
         <h2 style={{ marginTop: 0 }}>⚙️ Cài đặt</h2>
         
         <label style={{ fontWeight: "bold" }}>📹 Chọn camera:</label>
-        <select value={selectedDevice} onChange={(e) => { setSelectedDevice(e.target.value); startCamera(e.target.value); }} style={{ padding: "8px", borderRadius: "5px", border: "1px solid #ccc" }}>
-          <option value="">Chọn camera</option>
-          {devices.map((device) => ( <option key={device.deviceId} value={device.deviceId}>{device.label || `Camera ${device.deviceId}`}</option> ))}
-        </select>
+        <div style={{ display: "flex", gap: "10px" }h l.C"8xorav.labct>
+          <button className="hover-btn" onClick={scanAndSelectSonyCamera} style={{ padding: "8px 15px", backgroundColor: "#ef4444", color: "white", border: "none", borderRadius: "5px", cursor: "pointer", fontWeight: "bold", fontSize: "14px", whiteSpace: "nowrap" }}>📷 Tối ưu Sony</button>
+        </div>
 
         <div style={{ width: "100%", height: "180px", backgroundColor: "#111827", borderRadius: "8px", overflow: "hidden", display: "flex", justifyContent: "center", alignItems: "center", position: "relative" }}>
           {!stream && ( <div style={{ position: "absolute", color: "#9ca3af", textAlign: "center", zIndex: 1 }}><div style={{ fontSize: "24px", marginBottom: "5px" }}>📷</div>Vui lòng chọn camera</div> )}
