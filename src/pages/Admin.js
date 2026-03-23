@@ -144,6 +144,22 @@ const Admin = ({ onBack }) => {
     onBack(); // Điều hướng về Home
   };
 
+  // Hàm vẽ Layout minh họa bằng CSS trực quan
+  const renderLayoutPreview = (layout) => {
+    const wrapperStyle = { background: "#f3f4f6", border: "2px dashed #9ca3af", borderRadius: "8px", display: "flex", padding: "5px", gap: "5px", boxSizing: "border-box" };
+    const boxStyle = { background: "#9ca3af", borderRadius: "4px" };
+    
+    switch (layout) {
+      case "single": return <div style={{ ...wrapperStyle, width: "150px", height: "100px", flexDirection: "column" }}><div style={{ ...boxStyle, flex: 1 }}></div></div>;
+      case "vertical-2": return <div style={{ ...wrapperStyle, width: "100px", height: "150px", flexDirection: "column" }}><div style={{ ...boxStyle, flex: 1 }}></div><div style={{ ...boxStyle, flex: 1 }}></div></div>;
+      case "vertical-3": return <div style={{ ...wrapperStyle, width: "100px", height: "150px", flexDirection: "column" }}><div style={{ ...boxStyle, flex: 1 }}></div><div style={{ ...boxStyle, flex: 1 }}></div><div style={{ ...boxStyle, flex: 1 }}></div></div>;
+      case "grid-4": return <div style={{ ...wrapperStyle, width: "150px", height: "100px", flexWrap: "wrap" }}>{Array(4).fill(0).map((_, i) => <div key={i} style={{ ...boxStyle, width: "calc(50% - 2.5px)", height: "calc(50% - 2.5px)" }}></div>)}</div>;
+      case "grid-6": return <div style={{ ...wrapperStyle, width: "100px", height: "150px", flexWrap: "wrap" }}>{Array(6).fill(0).map((_, i) => <div key={i} style={{ ...boxStyle, width: "calc(50% - 2.5px)", height: "calc(33.33% - 3.33px)" }}></div>)}</div>;
+      case "grid-8": return <div style={{ ...wrapperStyle, width: "100px", height: "150px", flexWrap: "wrap" }}>{Array(8).fill(0).map((_, i) => <div key={i} style={{ ...boxStyle, width: "calc(50% - 2.5px)", height: "calc(25% - 3.75px)" }}></div>)}</div>;
+      default: return null;
+    }
+  };
+
   return (
     <div style={{ minHeight: "100vh", backgroundColor: "#f9fafb", display: "flex" }}>
       {/* Sidebar */}
@@ -222,12 +238,19 @@ const Admin = ({ onBack }) => {
                 <input type="file" accept="image/png" onChange={handleFileChange} style={{ padding: "10px", borderRadius: "8px", border: "1px dashed #d1d5db", flex: 1, cursor: "pointer" }} />
                 <button onClick={handleUploadFrame} style={{ padding: "12px 30px", background: "#4f46e5", color: "white", border: "none", borderRadius: "8px", fontWeight: "bold", cursor: "pointer", whiteSpace: "nowrap" }}>☁️ Upload Frame</button>
               </div>
-              {newFrameImage && (
-                <div style={{ marginTop: "10px" }}>
-                  <p style={{ margin: "0 0 5px 0", fontSize: "14px", color: "#6b7280" }}>Bản xem trước:</p>
-                  <img src={newFrameImage} alt="Preview" style={{ height: "150px", objectFit: "contain", border: "1px solid #e5e7eb", borderRadius: "8px", background: "#f3f4f6" }} />
+              <div style={{ display: "flex", gap: "30px", marginTop: "15px", flexWrap: "wrap" }}>
+                <div>
+                  <p style={{ margin: "0 0 10px 0", fontSize: "14px", color: "#6b7280", fontWeight: "bold" }}>Minh họa Layout:</p>
+                  {renderLayoutPreview(newFrameLayout)}
                 </div>
-              )}
+                {newFrameImage && (
+                  <div>
+                    <p style={{ margin: "0 0 10px 0", fontSize: "14px", color: "#6b7280", fontWeight: "bold" }}>Bản xem trước Frame:</p>
+                    {/* Sử dụng nền caro bằng SVG để làm nổi bật vùng trong suốt của ảnh PNG */}
+                    <img src={newFrameImage} alt="Preview" style={{ height: "150px", objectFit: "contain", border: "1px solid #e5e7eb", borderRadius: "8px", background: "url('data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"20\" height=\"20\"><rect width=\"10\" height=\"10\" fill=\"%23e5e7eb\"/><rect x=\"10\" y=\"10\" width=\"10\" height=\"10\" fill=\"%23e5e7eb\"/><rect x=\"10\" width=\"10\" height=\"10\" fill=\"%23f9fafb\"/><rect y=\"10\" width=\"10\" height=\"10\" fill=\"%23f9fafb\"/></svg>')" }} />
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* --- Danh sách Frame Grid --- */}
