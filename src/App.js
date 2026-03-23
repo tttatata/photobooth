@@ -6,6 +6,7 @@ import Admin from "./pages/Admin";
 import SettingsModal from "./component/SettingsModal";
 import LayoutModal from "./component/LayoutModal";
 import FrameModal from "./component/FrameModal";
+import { generateSampleFrame } from "./utils/helpers";
 import QrModal from "./component/QrModal";
 import GalleryModal from "./component/GalleryModal";
 import DrivePickerModal from "./component/DrivePickerModal";
@@ -70,7 +71,7 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
         const response = await fetch(`${process.env.REACT_APP_API_URL || ""}/api/frames`);
         const data = await response.json();
         if (data.success) {
-          setCustomFrames(data.frames.map(f => ({ id: f._id, src: f.image, label: f.name, layout: f.layout })));
+          setCustomFrames(data.frames.map(f => ({ id: f._id, src: f.image, label: f.name })));
         }
       } catch (error) {
         console.error("Lỗi lấy danh sách frame từ backend:", error);
@@ -79,10 +80,32 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
     fetchCustomFrames();
   }, []);
 
-  // Tự động lọc ra danh sách Frame chỉ thuộc về Layout đang được chọn
-  const availableFrames = useMemo(() => {
-    return customFrames.filter(frame => frame.layout === settings.layout || !frame.layout);
-  }, [customFrames, settings.layout]);
+  // Tự động sinh danh sách Frame mẫu và gộp với Frame tùy chỉnh từ Cơ sở dữ liệu
+  const sampleFrames = useMemo(() => {
+    return [
+      ...customFrames, // Đưa các frame tự tải lên vào đầu danh sách
+      { id: "tet", src: generateSampleFrame("tet", settings.layout), label: "Tết Nguyên Đán" },
+      { id: "sen", src: generateSampleFrame("sen", settings.layout), label: "Hoa Sen" },
+      { id: "dongson", src: generateSampleFrame("dongson", settings.layout), label: "Trống Đồng" },
+      { id: "hoian", src: generateSampleFrame("hoian", settings.layout), label: "Phố Cổ Hội An" },
+      { id: "aodai", src: generateSampleFrame("aodai", settings.layout), label: "Áo Dài" },
+      { id: "nonla", src: generateSampleFrame("nonla", settings.layout), label: "Nón Lá" },
+      { id: "cafe", src: generateSampleFrame("cafe", settings.layout), label: "Cà Phê Sữa" },
+      { id: "tre", src: generateSampleFrame("tre", settings.layout), label: "Tre Làng" },
+      { id: "ruongbac", src: generateSampleFrame("ruongbac", settings.layout), label: "Ruộng Bậc Thang" },
+      { id: "halong", src: generateSampleFrame("halong", settings.layout), label: "Vịnh Hạ Long" },
+      { id: "xichlo", src: generateSampleFrame("xichlo", settings.layout), label: "Xích Lô" },
+      { id: "hanoi", src: generateSampleFrame("hanoi", settings.layout), label: "Mùa Thu Hà Nội" },
+      { id: "saigon", src: generateSampleFrame("saigon", settings.layout), label: "Đêm Sài Gòn" },
+      { id: "muaroi", src: generateSampleFrame("muaroi", settings.layout), label: "Múa Rối Nước" },
+      { id: "chimlac", src: generateSampleFrame("chimlac", settings.layout), label: "Chim Lạc" },
+      { id: "denlong", src: generateSampleFrame("denlong", settings.layout), label: "Đêm Lồng Đèn" },
+      { id: "trongcom", src: generateSampleFrame("trongcom", settings.layout), label: "Trống Cơm" },
+      { id: "banto", src: generateSampleFrame("banto", settings.layout), label: "Hoa Văn Thổ Cẩm" },
+      { id: "nhatrang", src: generateSampleFrame("nhatrang", settings.layout), label: "Biển Xanh" },
+      { id: "nemchua", src: generateSampleFrame("nemchua", settings.layout), label: "Đặc Sản" },
+    ];
+  }, [settings.layout, customFrames]); // Update lại danh sách khi người dùng đổi Layout hoặc có Custom Frame mới tải xuống
 
   useEffect(() => {
     if (previewVideoRef.current && stream) {
@@ -984,7 +1007,7 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
       <SettingsModal show={showSettingsModal} onClose={() => setShowSettingsModal(false)} devices={devices} selectedDevice={selectedDevice} setSelectedDevice={setSelectedDevice} startCamera={startCamera} previewVideoRef={previewVideoRef} stream={stream} settings={settings} setSettings={setSettings} selectDirectory={selectDirectory} directoryHandle={directoryHandle} accessToken={accessToken} driveFolders={driveFolders} createDriveFolder={createDriveFolder} showFolderQr={showSelectedFolderQr} onOpenDrivePicker={() => setShowDrivePickerModal(true)} />
       <DrivePickerModal show={showDrivePickerModal} onClose={() => setShowDrivePickerModal(false)} driveFolders={driveFolders} onSelectFolder={(id) => setSettings({ ...settings, driveFolderId: id })} onCreateFolder={createDriveFolder} selectedFolderId={settings.driveFolderId} />
       <LayoutModal show={showLayoutModal} onClose={() => setShowLayoutModal(false)} settings={settings} setSettings={setSettings} />
-      <FrameModal show={showFrameModal} onClose={() => setShowFrameModal(false)} settings={settings} setSettings={setSettings} sampleFrames={availableFrames} />
+      <FrameModal show={showFrameModal} onClose={() => setShowFrameModal(false)} settings={settings} setSettings={setSettings} sampleFrames={sampleFrames} />
       <GalleryModal show={showGalleryModal} onClose={() => setShowGalleryModal(false)} photos={photos} rawPhotos={rawPhotos} selectedPhotos={selectedPhotos} toggleSelect={toggleSelect} printPhoto={printPhoto} onPrintAny={() => setShowPrintModal(true)} />
       <QrModal show={showFolderQrModal} onClose={() => setShowFolderQrModal(false)} qrLink={folderQrLink} title="📁 Thư mục sự kiện" description="Quét mã QR này để xem và tải về toàn bộ ảnh của sự kiện." />
       {showPrintModal && <PrintModal photoUrl={photoToPrint} onClose={() => setShowPrintModal(false)} />}
