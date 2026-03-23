@@ -20,24 +20,27 @@ const FrameModal = ({ show, onClose, settings, setSettings, sampleFrames }) => {
   if (!show) return null;
   return (
     <div style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", background: "rgba(0,0,0,0.6)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1100 }}>
-      <div style={{ position: "relative", background: "#fff", padding: "25px", borderRadius: "12px", width: "90%", maxWidth: "600px", maxHeight: "90vh", display: "flex", flexDirection: "column", gap: "15px", boxShadow: "0 10px 25px rgba(0,0,0,0.2)" }}>
+      <div style={{ position: "relative", background: "#fff", padding: "25px", borderRadius: "12px", width: "95%", maxWidth: "900px", maxHeight: "95vh", display: "flex", flexDirection: "column", gap: "15px", boxShadow: "0 10px 25px rgba(0,0,0,0.2)" }}>
         <button className="hover-btn" onClick={onClose} style={{ position: "absolute", top: "15px", right: "15px", background: "transparent", border: "none", fontSize: "20px", cursor: "pointer" }}>❌</button>
         <h2 style={{ marginTop: 0 }}>🖼️ Chọn Frame</h2>
         
-        <label style={{ fontWeight: "bold" }}>✨ Kho Frame của hệ thống:</label>
-        <div style={{ display: "flex", gap: "10px", overflowX: "auto", paddingBottom: "10px" }}>
-          <div onClick={() => setSettings({...settings, frame: null})} style={{ position: "relative", border: !settings.frame ? "3px solid #8b5cf6" : "1px solid #ccc", borderRadius: "8px", cursor: "pointer", padding: "5px", flexShrink: 0, opacity: settings.frame ? 0.5 : 1, filter: settings.frame ? "blur(2px) grayscale(50%)" : "none", transition: "all 0.3s ease" }}>
-            {!settings.frame && <div style={{ position: "absolute", top: "8px", right: "8px", background: "#10b981", color: "white", borderRadius: "50%", width: "24px", height: "24px", display: "flex", justifyContent: "center", alignItems: "center", fontSize: "14px", fontWeight: "bold", zIndex: 10 }}>✓</div>}
-            <div style={{ width: "80px", height: "120px", display: "flex", justifyContent: "center", alignItems: "center", background: "#f3f4f6", borderRadius: "4px", fontSize: "30px", border: "1px dashed #9ca3af" }}>🚫</div>
-            <div style={{ fontSize: "12px", textAlign: "center", marginTop: "5px", fontWeight: "bold", color: "#374151" }}>Không dùng</div>
+        <label style={{ fontWeight: "bold", fontSize: "16px" }}>✨ Kho Frame của hệ thống:</label>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: "15px", overflowY: "auto", padding: "10px", maxHeight: "55vh", background: "#f9fafb", borderRadius: "8px", border: "1px solid #e5e7eb" }}>
+          <div onClick={() => setSettings({...settings, frame: null})} className="hover-btn" style={{ position: "relative", border: !settings.frame ? "3px solid #8b5cf6" : "1px solid #d1d5db", borderRadius: "10px", cursor: "pointer", padding: "10px", background: "#fff", display: "flex", flexDirection: "column", opacity: settings.frame ? 0.6 : 1, transition: "all 0.3s ease", boxShadow: !settings.frame ? "0 4px 10px rgba(139, 92, 246, 0.3)" : "none" }}>
+            {!settings.frame && <div style={{ position: "absolute", top: "8px", right: "8px", background: "#10b981", color: "white", borderRadius: "50%", width: "26px", height: "26px", display: "flex", justifyContent: "center", alignItems: "center", fontSize: "14px", fontWeight: "bold", zIndex: 10 }}>✓</div>}
+            <div style={{ height: "180px", display: "flex", justifyContent: "center", alignItems: "center", background: "#f3f4f6", borderRadius: "6px", fontSize: "40px", border: "2px dashed #9ca3af" }}>🚫</div>
+            <div style={{ fontSize: "14px", textAlign: "center", marginTop: "10px", fontWeight: "bold", color: "#374151" }}>Không dùng</div>
           </div>
           {sampleFrames.map(f => (
-            <div key={f.id} onClick={() => setSettings({...settings, frame: settings.frame === f.src ? null : f.src})} style={{ position: "relative", border: settings.frame === f.src ? "3px solid #8b5cf6" : "1px solid #ccc", borderRadius: "8px", cursor: "pointer", padding: "5px", flexShrink: 0, opacity: settings.frame && settings.frame !== f.src ? 0.5 : 1, filter: settings.frame && settings.frame !== f.src ? "blur(2px) grayscale(50%)" : "none", transition: "all 0.3s ease" }}>
-              {settings.frame === f.src && <div style={{ position: "absolute", top: "8px", right: "8px", background: "#10b981", color: "white", borderRadius: "50%", width: "24px", height: "24px", display: "flex", justifyContent: "center", alignItems: "center", fontSize: "14px", fontWeight: "bold", zIndex: 10 }}>✓</div>}
-              <img src={f.src} alt={f.label} style={{ width: "80px", height: "120px", objectFit: "contain", borderRadius: "4px", background: "#e5e7eb" }} />
-              <div style={{ fontSize: "12px", textAlign: "center", marginTop: "5px", fontWeight: "bold" }}>{f.label}</div>
+            <div key={f.id} onClick={() => setSettings({...settings, frame: settings.frame === f.src ? null : f.src})} className="hover-btn" style={{ position: "relative", border: settings.frame === f.src ? "3px solid #8b5cf6" : "1px solid #d1d5db", borderRadius: "10px", cursor: "pointer", padding: "10px", background: "#fff", display: "flex", flexDirection: "column", opacity: settings.frame && settings.frame !== f.src ? 0.6 : 1, filter: settings.frame && settings.frame !== f.src ? "grayscale(50%)" : "none", transition: "all 0.3s ease", boxShadow: settings.frame === f.src ? "0 4px 10px rgba(139, 92, 246, 0.3)" : "none" }}>
+              {settings.frame === f.src && <div style={{ position: "absolute", top: "8px", right: "8px", background: "#10b981", color: "white", borderRadius: "50%", width: "26px", height: "26px", display: "flex", justifyContent: "center", alignItems: "center", fontSize: "14px", fontWeight: "bold", zIndex: 10 }}>✓</div>}
+              <img src={f.src} alt={f.label} style={{ width: "100%", height: "180px", objectFit: "contain", borderRadius: "6px", background: "#e5e7eb" }} />
+              <div style={{ fontSize: "14px", textAlign: "center", marginTop: "10px", fontWeight: "bold", color: "#111827", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }} title={f.label}>{f.label}</div>
             </div>
           ))}
+          {sampleFrames.length === 0 && (
+            <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "30px", color: "#6b7280" }}>Chưa có frame nào. Hãy thêm từ Admin Panel!</div>
+          )}
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "10px" }}>
