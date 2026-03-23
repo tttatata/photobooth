@@ -603,15 +603,11 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
         ]
       },
       "vertical-3": {
-        width: 1200, height: 1800,
         width: 1200, height: 1800, // Đảm bảo kích thước này bằng đúng kích thước gốc file PNG của bạn
         boxes: [
           { dx: 180, dy: 30, dw: 840, dh: 560 },
           { dx: 180, dy: 620, dw: 840, dh: 560 },
           { dx: 180, dy: 1210, dw: 840, dh: 560 }
-          { dx: /* Điền X ô 1 */ 180, dy: /* Điền Y ô 1 */ 30, dw: /* Rộng */ 840, dh: /* Cao */ 560 },
-          { dx: /* Điền X ô 2 */ 180, dy: /* Điền Y ô 2 */ 620, dw: /* Rộng */ 840, dh: /* Cao */ 560 },
-          { dx: /* Điền X ô 3 */ 180, dy: /* Điền Y ô 3 */ 1210, dw: /* Rộng */ 840, dh: /* Cao */ 560 }
         ]
       },
       "grid-4": {
