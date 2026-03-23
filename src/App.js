@@ -119,6 +119,7 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
     handleDeviceChange(); // Quét ngay lần đầu truy cập
 
     return () => navigator.mediaDevices.removeEventListener("devicechange", handleDeviceChange);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   
   const [countdownValue, setCountdownValue] = useState(null);
