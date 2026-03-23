@@ -16,11 +16,11 @@ router.get("/", async (req, res) => {
 // POST: /api/frames - Thêm frame mới
 router.post("/", async (req, res) => {
   try {
-    const { name, image } = req.body;
+    const { name, image, layout } = req.body;
     if (!name || !image) {
       return res.status(400).json({ success: false, message: "Vui lòng nhập tên và chọn ảnh!" });
     }
-    const newFrame = await Frame.create({ name, image });
+    const newFrame = await Frame.create({ name, image, layout: layout || "vertical-3" });
     res.json({ success: true, frame: newFrame, message: "Thêm frame thành công!" });
   } catch (error) {
     console.error("Lỗi thêm frame:", error);

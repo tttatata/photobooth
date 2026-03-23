@@ -9,6 +9,7 @@ const Admin = ({ onBack }) => {
   const [frames, setFrames] = useState([]);
   const [newFrameName, setNewFrameName] = useState("");
   const [newFrameImage, setNewFrameImage] = useState("");
+  const [newFrameLayout, setNewFrameLayout] = useState("vertical-3");
   const [isLoadingFrames, setIsLoadingFrames] = useState(false);
 
   // Tự động gọi API lấy danh sách người dùng khi mở tab 'users'
@@ -56,7 +57,7 @@ const Admin = ({ onBack }) => {
       const response = await fetch(`${process.env.REACT_APP_API_URL || ""}/api/frames`, {
         method: "POST", 
         headers: getAuthHeaders(),
-        body: JSON.stringify({ name: newFrameName, image: newFrameImage })
+        body: JSON.stringify({ name: newFrameName, image: newFrameImage, layout: newFrameLayout })
       });
       const data = await response.json();
       if (data.success) {
@@ -114,7 +115,7 @@ const Admin = ({ onBack }) => {
         await fetch(`${process.env.REACT_APP_API_URL || ""}/api/frames`, { 
           method: "POST", 
           headers: getAuthHeaders(), 
-          body: JSON.stringify({ name: style.label, image: imageBase64 }) 
+          body: JSON.stringify({ name: style.label, image: imageBase64, layout: "vertical-3" }) 
         });
       } catch (error) { console.error("Lỗi nạp frame:", error); }
     }
@@ -210,6 +211,14 @@ const Admin = ({ onBack }) => {
               <h3 style={{ margin: 0, color: "#374151" }}>➕ Thêm Frame Mới</h3>
               <div style={{ display: "flex", gap: "20px", alignItems: "center", flexWrap: "wrap" }}>
                 <input type="text" placeholder="Tên Frame (VD: Cưới 2024)" value={newFrameName} onChange={(e) => setNewFrameName(e.target.value)} style={{ padding: "12px", borderRadius: "8px", border: "1px solid #d1d5db", flex: 1, minWidth: "200px" }} />
+                <select value={newFrameLayout} onChange={(e) => setNewFrameLayout(e.target.value)} style={{ padding: "12px", borderRadius: "8px", border: "1px solid #d1d5db", flex: 1 }}>
+                  <option value="vertical-3">3 Ảnh Dọc (vertical-3)</option>
+                  <option value="vertical-2">2 Ảnh Dọc (vertical-2)</option>
+                  <option value="single">1 Ảnh Lớn (single)</option>
+                  <option value="grid-4">Lưới 4 Ảnh (grid-4)</option>
+                  <option value="grid-6">Lưới 6 Ảnh (grid-6)</option>
+                  <option value="grid-8">Lưới 8 Ảnh (grid-8)</option>
+                </select>
                 <input type="file" accept="image/png" onChange={handleFileChange} style={{ padding: "10px", borderRadius: "8px", border: "1px dashed #d1d5db", flex: 1, cursor: "pointer" }} />
                 <button onClick={handleUploadFrame} style={{ padding: "12px 30px", background: "#4f46e5", color: "white", border: "none", borderRadius: "8px", fontWeight: "bold", cursor: "pointer", whiteSpace: "nowrap" }}>☁️ Upload Frame</button>
               </div>
@@ -238,6 +247,7 @@ const Admin = ({ onBack }) => {
                       <div style={{ height: "180px", width: "100%", background: "#e5e7eb", borderRadius: "8px", overflow: "hidden", display: "flex", justifyContent: "center", alignItems: "center" }}>
                         <img src={frame.image} alt={frame.name} style={{ width: "100%", height: "100%", objectFit: "contain" }} />
                       </div>
+                      <span style={{ fontSize: "12px", color: "#4f46e5", fontWeight: "bold" }}>Layout: {frame.layout || "vertical-3"}</span>
                       <div style={{ fontWeight: "bold", color: "#111827", fontSize: "15px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }} title={frame.name}>{frame.name}</div>
                       <button onClick={() => handleDeleteFrame(frame._id)} style={{ padding: "8px", background: "#ef4444", color: "white", border: "none", borderRadius: "6px", cursor: "pointer", fontWeight: "bold", fontSize: "13px" }}>🗑️ Xóa</button>
                     </div>

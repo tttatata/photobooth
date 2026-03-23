@@ -71,7 +71,7 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
         const response = await fetch(`${process.env.REACT_APP_API_URL || ""}/api/frames`);
         const data = await response.json();
         if (data.success) {
-          setCustomFrames(data.frames.map(f => ({ id: f._id, src: f.image, label: f.name })));
+          setCustomFrames(data.frames.map(f => ({ id: f._id, src: f.image, label: f.name, layout: f.layout })));
         }
       } catch (error) {
         console.error("Lỗi lấy danh sách frame từ backend:", error);
@@ -82,8 +82,10 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
 
   // Tự động sinh danh sách Frame mẫu và gộp với Frame tùy chỉnh từ Cơ sở dữ liệu
   const sampleFrames = useMemo(() => {
+    // Lọc các frame được upload từ database theo layout người dùng đang chọn
+    const filteredCustomFrames = customFrames.filter(frame => frame.layout === settings.layout || !frame.layout);
     return [
-      ...customFrames, // Đưa các frame tự tải lên vào đầu danh sách
+      ...filteredCustomFrames, // Đưa các frame tự tải lên vào đầu danh sách
       { id: "tet", src: generateSampleFrame("tet", settings.layout), label: "Tết Nguyên Đán" },
       { id: "sen", src: generateSampleFrame("sen", settings.layout), label: "Hoa Sen" },
       { id: "dongson", src: generateSampleFrame("dongson", settings.layout), label: "Trống Đồng" },
