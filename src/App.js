@@ -557,18 +557,58 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
     const ctx = canvas.getContext("2d");
     const layout = currentSettings.layout || "vertical-3";
 
-    // Kích thước chuẩn khổ giấy ảnh 4x6 inch (A6) chất lượng cao
-    const A6_WIDTH = 1200;
-    const A6_HEIGHT = 1800;
+    // --- BẢNG CẤU HÌNH TỌA ĐỘ ẢNH CHUẨN ĐỂ THIẾT KẾ TRÊN CANVA ---
+    // Bạn hãy chỉnh sửa các con số dx (tọa độ X), dy (tọa độ Y), dw (chiều rộng), dh (chiều cao) 
+    // để khớp chính xác với thiết kế của bạn trên Canva.
+    const layoutConfigs = {
+      "single": {
+        width: 1800, height: 1200,
+        boxes: [ { dx: 150, dy: 100, dw: 1500, dh: 1000 } ]
+      },
+      "vertical-2": {
+        width: 1200, height: 1800,
+        boxes: [
+          { dx: 75, dy: 133, dw: 1050, dh: 700 },
+          { dx: 75, dy: 966, dw: 1050, dh: 700 }
+        ]
+      },
+      "vertical-3": {
+        width: 1200, height: 1800,
+        boxes: [
+          { dx: 180, dy: 30, dw: 840, dh: 560 },
+          { dx: 180, dy: 620, dw: 840, dh: 560 },
+          { dx: 180, dy: 1210, dw: 840, dh: 560 }
+        ]
+      },
+      "grid-4": {
+        width: 1800, height: 1200,
+        boxes: [
+          { dx: 66, dy: 44, dw: 800, dh: 533 }, { dx: 934, dy: 44, dw: 800, dh: 533 },
+          { dx: 66, dy: 623, dw: 800, dh: 533 }, { dx: 934, dy: 623, dw: 800, dh: 533 }
+        ]
+      },
+      "grid-6": {
+        width: 1200, height: 1800,
+        boxes: [
+          { dx: 66, dy: 200, dw: 500, dh: 333 }, { dx: 634, dy: 200, dw: 500, dh: 333 },
+          { dx: 66, dy: 650, dw: 500, dh: 333 }, { dx: 634, dy: 650, dw: 500, dh: 333 },
+          { dx: 66, dy: 1100, dw: 500, dh: 333 }, { dx: 634, dy: 1100, dw: 500, dh: 333 }
+        ]
+      },
+      "grid-8": {
+        width: 1200, height: 1800,
+        boxes: [
+          { dx: 60, dy: 88, dw: 510, dh: 340 }, { dx: 630, dy: 88, dw: 510, dh: 340 },
+          { dx: 60, dy: 516, dw: 510, dh: 340 }, { dx: 630, dy: 516, dw: 510, dh: 340 },
+          { dx: 60, dy: 944, dw: 510, dh: 340 }, { dx: 630, dy: 944, dw: 510, dh: 340 },
+          { dx: 60, dy: 1372, dw: 510, dh: 340 }, { dx: 630, dy: 1372, dw: 510, dh: 340 }
+        ]
+      }
+    };
 
-    // Xác định kích thước canvas dọc hay ngang
-    if (layout === "single" || layout === "grid-4") {
-      canvas.width = A6_HEIGHT;  // Ngang 1800
-      canvas.height = A6_WIDTH;  // 1200
-    } else {
-      canvas.width = A6_WIDTH;   // Dọc 1200
-      canvas.height = A6_HEIGHT; // 1800
-    }
+    const config = layoutConfigs[layout] || layoutConfigs["vertical-3"];
+    canvas.width = config.width;
+    canvas.height = config.height;
 
     // Tô nền trắng
     ctx.fillStyle = "#ffffff";
@@ -586,41 +626,10 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
       )
     );
 
-    // --- BƯỚC 1: VẼ HÌNH ẢNH CHỤP LÊN TRƯỚC (NẰM BÊN DƯỚI) ---
+    // --- BƯỚC 1: VẼ HÌNH ẢNH CHỤP LÊN THEO TỌA ĐỘ Ở TRÊN ---
     loadedImages.forEach((img, index) => {
-      let dx = 0, dy = 0, dw = 0, dh = 0;
-
-      if (layout === "single") {
-        // 1 ảnh lớn giữa khổ ngang 1800x1200
-        dw = 1500; dh = 1000; dx = 150; dy = 100;
-      } else if (layout === "vertical-2") {
-        // 2 ảnh dọc
-        dw = 1050; dh = 700; dx = 75; dy = 133 + index * 833;
-      } else if (layout === "vertical-3") {
-        // 3 ảnh dọc
-        dw = 840; dh = 560; dx = 180; dy = 30 + index * 590;
-      } else if (layout === "grid-4") {
-        // Lưới 4 ảnh 2x2 trên khổ ngang 1800x1200
-        dw = 800; dh = 533;
-        let col = index % 2;
-        let row = Math.floor(index / 2);
-        dx = 66 + col * 868;
-        dy = 44 + row * 579;
-      } else if (layout === "grid-6") {
-        // Lưới 6 ảnh 2x3 trên khổ dọc 1200x1800
-        dw = 500; dh = 333;
-        let col = index % 2;
-        let row = Math.floor(index / 2);
-        dx = 66 + col * 568; 
-        dy = 200 + row * 450;
-      } else if (layout === "grid-8") {
-        // Lưới 8 ảnh 2x4 trên khổ dọc 1200x1800
-        dw = 510; dh = 340;
-        let col = index % 2;
-        let row = Math.floor(index / 2);
-        dx = 60 + col * 570; 
-        dy = 88 + row * 428;
-      }
+      const box = config.boxes[index];
+      if (!box) return; // Tránh lỗi nếu số ảnh chụp lớn hơn số ô thiết kế
 
       // Áp dụng filter trước khi vẽ từng ảnh nếu có
       if (currentSettings.filter && currentSettings.filter !== "none") {
@@ -628,7 +637,7 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
       } else {
         ctx.filter = "none";
       }
-      ctx.drawImage(img, dx, dy, dw, dh);
+      ctx.drawImage(img, box.dx, box.dy, box.dw, box.dh);
       ctx.filter = "none"; // reset filter
     });
 
