@@ -95,6 +95,11 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
         const videoDevices = allDevices.filter(device => device.kind === "videoinput");
         setDevices(videoDevices);
 
+        console.log("Danh sách camera trình duyệt tìm thấy:", videoDevices.map(d => d.label));
+
+        // Đóng luồng tạm thời ngay lập tức để không chiếm quyền sử dụng camera
+        tempStream.getTracks().forEach(track => track.stop());
+
         // Nhận diện tự động nếu cắm Sony / Webcam USB
         const externalCam = videoDevices.find(device => {
           const label = device.label.toLowerCase();
@@ -106,10 +111,10 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
         });
 
         if (externalCam) {
+          console.log("Đã tự động chọn:", externalCam.label);
           setSelectedDevice(externalCam.deviceId);
-          startCamera(externalCam.deviceId, true);
+          startCamera(externalCam.deviceId);
         }
-        tempStream.getTracks().forEach(track => track.stop());
       } catch (error) {
         console.error("Lỗi tự động quét camera:", error);
       }
