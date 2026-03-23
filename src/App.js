@@ -70,7 +70,7 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
         const response = await fetch(`${process.env.REACT_APP_API_URL || ""}/api/frames`);
         const data = await response.json();
         if (data.success) {
-          setCustomFrames(data.frames.map(f => ({ id: f._id, src: f.image, label: f.name })));
+          setCustomFrames(data.frames.map(f => ({ id: f._id, src: f.image, label: f.name, layout: f.layout })));
         }
       } catch (error) {
         console.error("Lỗi lấy danh sách frame từ backend:", error);
@@ -78,6 +78,11 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
     };
     fetchCustomFrames();
   }, []);
+
+  // Tự động lọc ra danh sách Frame chỉ thuộc về Layout đang được chọn
+  const availableFrames = useMemo(() => {
+    return customFrames.filter(frame => frame.layout === settings.layout || !frame.layout);
+  }, [customFrames, settings.layout]);
 
   useEffect(() => {
     if (previewVideoRef.current && stream) {
@@ -95,11 +100,6 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
         const videoDevices = allDevices.filter(device => device.kind === "videoinput");
         setDevices(videoDevices);
 
-        console.log("Danh sách camera trình duyệt tìm thấy:", videoDevices.map(d => d.label));
-
-        // Đóng luồng tạm thời ngay lập tức để không chiếm quyền sử dụng camera
-        tempStream.getTracks().forEach(track => track.stop());
-
         // Nhận diện tự động nếu cắm Sony / Webcam USB
         const externalCam = videoDevices.find(device => {
           const label = device.label.toLowerCase();
@@ -111,10 +111,10 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
         });
 
         if (externalCam) {
-          console.log("Đã tự động chọn:", externalCam.label);
           setSelectedDevice(externalCam.deviceId);
-          startCamera(externalCam.deviceId);
+          startCamera(externalCam.deviceId, true);
         }
+        tempStream.getTracks().forEach(track => track.stop());
       } catch (error) {
         console.error("Lỗi tự động quét camera:", error);
       }
@@ -984,7 +984,7 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
       <SettingsModal show={showSettingsModal} onClose={() => setShowSettingsModal(false)} devices={devices} selectedDevice={selectedDevice} setSelectedDevice={setSelectedDevice} startCamera={startCamera} previewVideoRef={previewVideoRef} stream={stream} settings={settings} setSettings={setSettings} selectDirectory={selectDirectory} directoryHandle={directoryHandle} accessToken={accessToken} driveFolders={driveFolders} createDriveFolder={createDriveFolder} showFolderQr={showSelectedFolderQr} onOpenDrivePicker={() => setShowDrivePickerModal(true)} />
       <DrivePickerModal show={showDrivePickerModal} onClose={() => setShowDrivePickerModal(false)} driveFolders={driveFolders} onSelectFolder={(id) => setSettings({ ...settings, driveFolderId: id })} onCreateFolder={createDriveFolder} selectedFolderId={settings.driveFolderId} />
       <LayoutModal show={showLayoutModal} onClose={() => setShowLayoutModal(false)} settings={settings} setSettings={setSettings} />
-      <FrameModal show={showFrameModal} onClose={() => setShowFrameModal(false)} settings={settings} setSettings={setSettings} sampleFrames={customFrames} />
+      <FrameModal show={showFrameModal} onClose={() => setShowFrameModal(false)} settings={settings} setSettings={setSettings} sampleFrames={availableFrames} />
       <GalleryModal show={showGalleryModal} onClose={() => setShowGalleryModal(false)} photos={photos} rawPhotos={rawPhotos} selectedPhotos={selectedPhotos} toggleSelect={toggleSelect} printPhoto={printPhoto} onPrintAny={() => setShowPrintModal(true)} />
       <QrModal show={showFolderQrModal} onClose={() => setShowFolderQrModal(false)} qrLink={folderQrLink} title="📁 Thư mục sự kiện" description="Quét mã QR này để xem và tải về toàn bộ ảnh của sự kiện." />
       {showPrintModal && <PrintModal photoUrl={photoToPrint} onClose={() => setShowPrintModal(false)} />}
