@@ -85,50 +85,43 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
     }
   }, [stream, showSettingsModal]);
 
-  // Liệt kê camera
+  // Tự động quét và kết nối máy ảnh khi cắm cáp thiết bị mới
   useEffect(() => {
-    navigator.mediaDevices.enumerateDevices().then((devices) => {
-      const videoDevices = devices.filter(
-        (device) => device.kind === "videoinput",
-      );
-      setDevices(videoDevices);
-    });
-  }, []);
-  const [countdownValue, setCountdownValue] = useState(null);
+    const handleDeviceChange = async () => {
+      try {
+        // Mở luồng phụ để trình duyệt bỏ ẩn tên thiết bị
+        const tempStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        const allDevices = await navigator.mediaDevices.enumerateDevices();
+        const videoDevices = allDevices.filter(device => device.kind === "videoinput");
+        setDevices(videoDevices);
 
-  // Hàm quét và tự động kết nối máy ảnh Sony (đặc biệt qua cáp Type-C / USB Streaming)
-  const scanAndSelectSonyCamera = async () => {
-    try {
-      // Bật luồng phụ tạm thời để trình duyệt cấp quyền và đọc được Tên thật (Label)
-      const tempStream = await navigator.mediaDevices.getUserMedia({ video: true });
-      
-      const allDevices = await navigator.mediaDevices.enumerateDevices();
-      const videoDevices = allDevices.filter(device => device.kind === "videoinput");
-      setDevices(videoDevices);
+        // Nhận diện tự động nếu cắm Sony / Webcam USB
+        const externalCam = videoDevices.find(device => {
+          const label = device.label.toLowerCase();
+          return label.includes("sony") || 
+                 label.includes("imaging edge") || 
+                 label.includes("usb streaming") || 
+                 label.includes("usb video") || 
+                 label.includes("webcam");
+        });
 
-      // Tìm thiết bị có tên chứa từ khóa (hỗ trợ USB Streaming qua Type-C)
-      const externalCam = videoDevices.find(device => {
-        const label = device.label.toLowerCase();
-        return label.includes("sony") || 
-               label.includes("imaging edge") || 
-               label.includes("usb streaming") || 
-               label.includes("usb video") || 
-               label.includes("webcam");
-      });
-
-      if (externalCam) {
-        setSelectedDevice(externalCam.deviceId);
-        startCamera(externalCam.deviceId, true);
-        alert(`✅ Đã kết nối thành công máy ảnh: ${externalCam.label}`);
-      } else {
-        alert("❌ Không tìm thấy máy ảnh. Vui lòng kiểm tra cáp Type-C và bật chế độ 'USB Streaming' trên máy ảnh!");
+        if (externalCam) {
+          setSelectedDevice(externalCam.deviceId);
+          startCamera(externalCam.deviceId, true);
+        }
+        tempStream.getTracks().forEach(track => track.stop());
+      } catch (error) {
+        console.error("Lỗi tự động quét camera:", error);
       }
-      tempStream.getTracks().forEach(track => track.stop());
-    } catch (error) {
-      console.error("Lỗi quét máy ảnh:", error);
-      alert("Lỗi: Không thể truy cập Camera!");
-    }
-  };
+    };
+
+    navigator.mediaDevices.addEventListener("devicechange", handleDeviceChange);
+    handleDeviceChange(); // Quét ngay lần đầu truy cập
+
+    return () => navigator.mediaDevices.removeEventListener("devicechange", handleDeviceChange);
+  }, []);
+  
+  const [countdownValue, setCountdownValue] = useState(null);
 
   // Tự động chèn script tải thư viện Google khi chạy ứng dụng
   useEffect(() => {
@@ -982,7 +975,7 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
       </div>
 
       {/* Các Modals đã được tách ra file riêng để code gọn gàng */}
-      <SettingsModal show={showSettingsModal} onClose={() => setShowSettingsModal(false)} devices={devices} selectedDevice={selectedDevice} setSelectedDevice={setSelectedDevice} startCamera={startCamera} scanAndSelectSonyCamera={scanAndSelectSonyCamera} previewVideoRef={previewVideoRef} stream={stream} settings={settings} setSettings={setSettings} selectDirectory={selectDirectory} directoryHandle={directoryHandle} accessToken={accessToken} driveFolders={driveFolders} createDriveFolder={createDriveFolder} showFolderQr={showSelectedFolderQr} onOpenDrivePicker={() => setShowDrivePickerModal(true)} />
+      <SettingsModal show={showSettingsModal} onClose={() => setShowSettingsModal(false)} devices={devices} selectedDevice={selectedDevice} setSelectedDevice={setSelectedDevice} startCamera={startCamera} previewVideoRef={previewVideoRef} stream={stream} settings={settings} setSettings={setSettings} selectDirectory={selectDirectory} directoryHandle={directoryHandle} accessToken={accessToken} driveFolders={driveFolders} createDriveFolder={createDriveFolder} showFolderQr={showSelectedFolderQr} onOpenDrivePicker={() => setShowDrivePickerModal(true)} />
       <DrivePickerModal show={showDrivePickerModal} onClose={() => setShowDrivePickerModal(false)} driveFolders={driveFolders} onSelectFolder={(id) => setSettings({ ...settings, driveFolderId: id })} onCreateFolder={createDriveFolder} selectedFolderId={settings.driveFolderId} />
       <LayoutModal show={showLayoutModal} onClose={() => setShowLayoutModal(false)} settings={settings} setSettings={setSettings} />
       <FrameModal show={showFrameModal} onClose={() => setShowFrameModal(false)} settings={settings} setSettings={setSettings} sampleFrames={customFrames} />

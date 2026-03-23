@@ -17,9 +17,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/frames", frameRoutes);
 
 // Test Route cơ bản
-app.get("/", (req, res) => {
-  res.json({ message: "🎉 Chào mừng đến với Backend VietBooth API!" });
-});
+
 app.get("/api", (req, res) => {
   res.json({ message: "🎉 Chào mừng đến với Backend VietBooth API!" });
 });
