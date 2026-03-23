@@ -982,8 +982,7 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
       </div>
 
       {/* Các Modals đã được tách ra file riêng để code gọn gàng */}
-      <SettingsModal show={showSettingsModal} onClose={() => setShowSettingsModal(false)} devices={devices} selectedDevice={selectedDevice} setSelectedDevice={setSelectedDevice} startCamera={startCamera} previewVideoRef={previewVideoRef} stream={stream} settings={settings} setSettings={setSettings} selectDirectory={selectDirectory} directoryHandle={directoryHandle} accessToken={accessToken} driveFolders={driveFolders} createDriveFolder={createDriveFolder} showFolderQr={showSelectedFolderQr} onOpenDrivePicker={() => setShowDrivePickerModal(true)} />
-      <DrivePickerModal show={showDrivePickerModal} onClose={() => setShowDrivePickerModal(false)} driveFolders={driveFolders} onSelectFolder={(id) => setSettings({ ...settings, driveFolderId: id })} onCreateFolder={createDriveFolder} selectedFolderId={settings.driveFolderId} />
+      <SettingsModal show={showSettingsModal} onClose={() => setShowSettingsModal(false)} devices={devices} selectedDevice={selectedDevice} setSelectedDevice={setSelectedDevice} startCamera={startCamera} eateFolder={createDriveFolder} selectedFolderId={settings.driveFolderId} />
       <LayoutModal show={showLayoutModal} onClose={() => setShowLayoutModal(false)} settings={settings} setSettings={setSettings} />
       <FrameModal show={showFrameModal} onClose={() => setShowFrameModal(false)} settings={settings} setSettings={setSettings} sampleFrames={customFrames} />
       <GalleryModal show={showGalleryModal} onClose={() => setShowGalleryModal(false)} photos={photos} rawPhotos={rawPhotos} selectedPhotos={selectedPhotos} toggleSelect={toggleSelect} printPhoto={printPhoto} onPrintAny={() => setShowPrintModal(true)} />
