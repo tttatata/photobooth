@@ -11,6 +11,7 @@ const Admin = ({ onBack }) => {
   const [newFrameImage, setNewFrameImage] = useState("");
   const [newFrameLayout, setNewFrameLayout] = useState("vertical-3");
   const [isLoadingFrames, setIsLoadingFrames] = useState(false);
+  const [filterLayout, setFilterLayout] = useState("all"); // State lọc danh sách Frame
 
   // Tự động gọi API lấy danh sách người dùng khi mở tab 'users'
   useEffect(() => {
@@ -160,6 +161,9 @@ const Admin = ({ onBack }) => {
     }
   };
 
+  // Lọc danh sách Frame để hiển thị
+  const displayedFrames = filterLayout === "all" ? frames : frames.filter(f => (f.layout || "vertical-3") === filterLayout);
+
   return (
     <div style={{ minHeight: "100vh", backgroundColor: "#f9fafb", display: "flex" }}>
       {/* Sidebar */}
@@ -256,16 +260,27 @@ const Admin = ({ onBack }) => {
             {/* --- Danh sách Frame Grid --- */}
             <div style={{ background: "white", padding: "20px", borderRadius: "8px", boxShadow: "0 1px 3px rgba(0,0,0,0.1)", marginTop: "30px" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px", flexWrap: "wrap", gap: "10px" }}>
-                <h3 style={{ margin: 0, color: "#374151" }}>📚 Danh sách Frame hiện có</h3>
+                <div style={{ display: "flex", alignItems: "center", gap: "15px", flexWrap: "wrap" }}>
+                  <h3 style={{ margin: 0, color: "#374151" }}>📚 Danh sách Frame hiện có</h3>
+                  <select value={filterLayout} onChange={(e) => setFilterLayout(e.target.value)} style={{ padding: "8px", borderRadius: "6px", border: "1px solid #d1d5db", outline: "none", cursor: "pointer", fontWeight: "bold", color: "#4f46e5" }}>
+                    <option value="all">Tất cả Layout</option>
+                    <option value="vertical-3">3 Ảnh Dọc (vertical-3)</option>
+                    <option value="vertical-2">2 Ảnh Dọc (vertical-2)</option>
+                    <option value="single">1 Ảnh Lớn (single)</option>
+                    <option value="grid-4">Lưới 4 Ảnh (grid-4)</option>
+                    <option value="grid-6">Lưới 6 Ảnh (grid-6)</option>
+                    <option value="grid-8">Lưới 8 Ảnh (grid-8)</option>
+                  </select>
+                </div>
                 <button onClick={handleLoadSystemFrames} style={{ padding: "8px 15px", background: "#f59e0b", color: "white", border: "none", borderRadius: "6px", cursor: "pointer", fontWeight: "bold", fontSize: "14px" }}>📥 Nạp thư viện Frame có sẵn</button>
               </div>
             {isLoadingFrames ? (
                 <p style={{ color: "#4f46e5", textAlign: "center", padding: "20px 0", fontWeight: "bold" }}>⏳ Đang tải danh sách từ MongoDB...</p>
-              ) : frames.length === 0 ? (
-                <p style={{ color: "#6b7280", textAlign: "center", padding: "20px 0" }}>Chưa có frame nào. Hãy tải lên frame đầu tiên của bạn!</p>
+              ) : displayedFrames.length === 0 ? (
+                <p style={{ color: "#6b7280", textAlign: "center", padding: "20px 0" }}>Không có frame nào thuộc Layout này!</p>
               ) : (
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "20px" }}>
-                  {frames.map((frame) => (
+                  {displayedFrames.map((frame) => (
                     <div key={frame._id} style={{ border: "1px solid #e5e7eb", borderRadius: "12px", padding: "10px", textAlign: "center", display: "flex", flexDirection: "column", gap: "10px", background: "#f9fafb", transition: "transform 0.2s" }} onMouseEnter={e => e.currentTarget.style.transform = "translateY(-5px)"} onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}>
                       <div style={{ height: "180px", width: "100%", background: "#e5e7eb", borderRadius: "8px", overflow: "hidden", display: "flex", justifyContent: "center", alignItems: "center" }}>
                         <img src={frame.image} alt={frame.name} style={{ width: "100%", height: "100%", objectFit: "contain" }} />
