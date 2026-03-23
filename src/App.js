@@ -516,42 +516,6 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
       .catch((err) => console.error("Lỗi truy cập camera:", err));
   };
 
-  // Hàm quét và tự động kết nối máy ảnh Sony / Capture Card
-  const scanAndSelectSonyCamera = async () => {
-    try {
-      // Bật luồng phụ tạm thời để trình duyệt cấp quyền và đọc được Tên thật (Label) của thiết bị
-      const tempStream = await navigator.mediaDevices.getUserMedia({ video: true });
-      
-      const allDevices = await navigator.mediaDevices.enumerateDevices();
-      const videoDevices = allDevices.filter(device => device.kind === "videoinput");
-      setDevices(videoDevices);
-
-      // Tìm thiết bị có tên chứa "sony", "imaging edge", "cam link", "capture", "usb video"
-      const externalCam = videoDevices.find(device => {
-        const label = device.label.toLowerCase();
-        return label.includes("sony") || 
-               label.includes("imaging edge") || 
-               label.includes("cam link") || 
-               label.includes("capture") || 
-               label.includes("usb video");
-      });
-
-      if (externalCam) {
-        setSelectedDevice(externalCam.deviceId);
-        startCamera(externalCam.deviceId);
-        // Tắt stream phụ sau khi tìm thấy
-        tempStream.getTracks().forEach(track => track.stop());
-        alert(`✅ Đã kết nối thành công với máy ảnh: ${externalCam.label}`);
-      } else {
-        tempStream.getTracks().forEach(track => track.stop());
-        alert("❌ Không tìm thấy máy ảnh Sony. Vui lòng kiểm tra lại cáp HDMI / USB hoặc phần mềm Imaging Edge!");
-      }
-    } catch (error) {
-      console.error("Lỗi quét máy ảnh:", error);
-      alert("Lỗi: Không thể truy cập để quét thiết bị. Vui lòng kiểm tra quyền Camera!");
-    }
-  };
-
   const generateCollage = async (images, currentSettings) => {
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
@@ -884,13 +848,6 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
 
         <div className="camera-mode" style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
           <div className="controls-container" style={{ marginBottom: "30px", display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "15px" }}>
-            <button 
-              className="hover-btn"
-              onClick={scanAndSelectSonyCamera} 
-              style={{ padding: "12px 24px", fontSize: "16px", fontWeight: "bold", color: "#fff", backgroundColor: "#ef4444", border: "none", borderRadius: "30px", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px", boxShadow: "0 4px 10px rgba(239, 68, 68, 0.3)" }}
-            >
-              📷 Kết Nối Sony
-            </button>
             <button 
               className="hover-btn"
               onClick={() => setShowSettingsModal(true)} 
