@@ -13,12 +13,10 @@ const AVAILABLE_FILTERS = [
   { id: "fade", label: "Sương mù", filter: "opacity(0.8) saturate(80%) brightness(1.2)", icon: "🌫️" },
 ];
 
-const FilterSelector = ({ settings, setSettings, isMobile, maxHeight, customFilters = [] }) => {
-  const allFilters = [...AVAILABLE_FILTERS, ...customFilters];
-
+const FilterSelector = ({ settings, setSettings, isMobile, maxHeight }) => {
   return isMobile ? (
     <div style={{ display: "flex", overflowX: "auto", gap: "10px", paddingBottom: "5px", scrollbarWidth: "none" }}>
-      {allFilters.map(f => (
+      {AVAILABLE_FILTERS.map(f => (
         <div key={f.id} className="filter-btn" onClick={() => setSettings({ ...settings, filter: f.filter })} style={{ flex: "0 0 auto", padding: "8px 16px", background: settings.filter === f.filter ? "#e0e7ff" : "#374151", color: settings.filter === f.filter ? "#4f46e5" : "#e5e7eb", borderRadius: "20px", fontSize: "13px", display: "flex", alignItems: "center", gap: "6px" }}>
           <span>{f.icon}</span> {f.label}
         </div>
@@ -26,7 +24,7 @@ const FilterSelector = ({ settings, setSettings, isMobile, maxHeight, customFilt
     </div>
   ) : (
     <div className="filter-sidebar" style={{ display: "flex", flexDirection: "column", gap: "10px", maxHeight, overflowY: "auto", paddingRight: "10px" }}>
-      {allFilters.map(f => (
+      {AVAILABLE_FILTERS.map(f => (
         <div key={f.id} className="filter-btn" onClick={() => setSettings({ ...settings, filter: f.filter })} style={{ background: settings.filter === f.filter ? "#e0e7ff" : "#f9fafb", color: settings.filter === f.filter ? "#4f46e5" : "#4b5563", border: settings.filter === f.filter ? "2px solid #4f46e5" : "2px solid #e5e7eb" }}>
           <span style={{ fontSize: "20px" }}>{f.icon}</span>
           {f.label}

@@ -50,7 +50,6 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
   const [rawPhotos, setRawPhotos] = useState([]);
   const [selectedPhotos, setSelectedPhotos] = useState([]);
   const [customFrames, setCustomFrames] = useState([]); // Chứa frames từ Backend
-  const [customFilters, setCustomFilters] = useState([]); // Chứa filters từ Backend
   const [settings, setSettings] = useState({
     countdown: 3,
     photoCount: 3,
@@ -972,7 +971,6 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
 
           {/* Danh sách Filters Cuộn Ngang */}
           <FilterSelector settings={settings} setSettings={setSettings} isMobile={true} />
-          <FilterSelector settings={settings} setSettings={setSettings} isMobile={true} customFilters={customFilters} />
 
           {/* Hệ thống Nút điều khiển dạng Lưới (Grid) */}
           <MobileControls 

@@ -13,32 +13,6 @@ const Admin = ({ onBack }) => {
   const [isLoadingFrames, setIsLoadingFrames] = useState(false);
   const [filterLayout, setFilterLayout] = useState("all"); // State lọc danh sách Frame
 
-  // State quản lý Filter
-  const [customFilters, setCustomFilters] = useState([]);
-  const [newFilterName, setNewFilterName] = useState("");
-  
-  // Nhóm Light (Ánh sáng)
-  const [exposure, setExposure] = useState(100);
-  const [contrast, setContrast] = useState(100);
-  const [highlight, setHighlight] = useState(0);
-  const [shadow, setShadow] = useState(0);
-  const [white, setWhite] = useState(0);
-  const [black, setBlack] = useState(0);
-  // Nhóm Color (Màu sắc)
-  const [temperature, setTemperature] = useState(0);
-  const [tint, setTint] = useState(0);
-  const [vibrance, setVibrance] = useState(0);
-  const [saturation, setSaturation] = useState(100);
-  // Nhóm Effects (Hiệu ứng)
-  const [texture, setTexture] = useState(0);
-  const [clarity, setClarity] = useState(0);
-  const [dehaze, setDehaze] = useState(0);
-  const [vignette, setVignette] = useState(0);
-  const [grain, setGrain] = useState(0);
-
-  const [previewImage, setPreviewImage] = useState("https://images.unsplash.com/photo-1616091216791-a5360b5ce757?q=80&w=600&auto=format&fit=crop"); // Ảnh mẫu mặc định
-  const [isCreatingFilter, setIsCreatingFilter] = useState(false); // Chuyển đổi màn hình danh sách và tạo mới
-
   // Tự động gọi API lấy danh sách người dùng khi mở tab 'users'
   useEffect(() => {
     if (activeTab === 'users') {
@@ -46,9 +20,6 @@ const Admin = ({ onBack }) => {
     }
     if (activeTab === 'frames') {
       fetchFrames();
-    }
-    if (activeTab === 'filters') {
-      fetchFilters();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
@@ -69,16 +40,6 @@ const Admin = ({ onBack }) => {
       console.error("Lỗi lấy danh sách frame:", error);
     } finally {
       setIsLoadingFrames(false); // Tắt trạng thái Loading khi hoàn tất
-    }
-  };
-
-  const fetchFilters = async () => {
-    try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL || ""}/api/filters`);
-      const data = await response.json();
-      if (data.success) setCustomFilters(data.filters);
-    } catch (error) {
-      console.error("Lỗi lấy danh sách filter:", error);
     }
   };
 
@@ -118,60 +79,6 @@ const Admin = ({ onBack }) => {
       const data = await response.json();
       if (data.success) fetchFrames();
     } catch (error) { console.error("Lỗi xóa frame:", error); }
-  };
-
-  const handleSaveFilter = async () => {
-    if (!newFilterName) return alert("Vui lòng nhập tên Filter!");
-    
-    // Giả lập các thông số Lightroom bằng cách nội suy (merge) vào CSS Filter
-    const calcBrightness = Math.max(0, exposure + (highlight * 0.1) + (shadow * 0.1) + (white * 0.1) - (black * 0.1));
-    const calcContrast = Math.max(0, contrast + (clarity * 0.2) + (dehaze * 0.2));
-    const calcSaturate = Math.max(0, saturation + (vibrance * 0.5));
-    const calcSepia = temperature > 0 ? temperature : 0;
-    const calcHueRotate = Number(tint) + (temperature < 0 ? temperature * -0.5 : 0);
-    const calcBlur = texture < 0 ? Math.abs(texture) * 0.05 : 0;
-
-    const filterValue = `brightness(${calcBrightness}%) contrast(${calcContrast}%) saturate(${calcSaturate}%) sepia(${calcSepia}%) hue-rotate(${calcHueRotate}deg) blur(${calcBlur}px)`;
-
-    try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL || ""}/api/filters`, {
-        method: "POST",
-        headers: getAuthHeaders(),
-        body: JSON.stringify({ name: newFilterName, filter: filterValue })
-      });
-      const data = await response.json();
-      if (data.success) {
-        alert("Thêm Filter thành công!");
-        setNewFilterName("");
-        setExposure(100); setContrast(100); setHighlight(0); setShadow(0); setWhite(0); setBlack(0);
-        setTemperature(0); setTint(0); setVibrance(0); setSaturation(100);
-        setTexture(0); setClarity(0); setDehaze(0); setVignette(0); setGrain(0);
-        fetchFilters();
-        setIsCreatingFilter(false); // Quay lại danh sách sau khi lưu thành công
-      } else { alert(data.message); }
-    } catch (error) { console.error("Lỗi upload filter:", error); }
-  };
-
-  const handleDeleteFilter = async (id) => {
-    if (!window.confirm("Bạn có chắc muốn xóa filter này?")) return;
-    try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL || ""}/api/filters/${id}`, { 
-        method: "DELETE",
-        headers: getAuthHeaders()
-      });
-      const data = await response.json();
-      if (data.success) fetchFilters();
-    } catch (error) { console.error("Lỗi xóa filter:", error); }
-  };
-
-  // Xử lý khi chọn ảnh mẫu Preview
-  const handlePreviewImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => setPreviewImage(reader.result);
-      reader.readAsDataURL(file);
-    }
   };
 
   const handleLoadSystemFrames = async () => {
@@ -254,24 +161,6 @@ const Admin = ({ onBack }) => {
     }
   };
 
-  // Component Slider rút gọn code giao diện
-  const SliderControl = ({ label, value, min, max, onChange }) => (
-    <div style={{ marginBottom: "10px" }}>
-      <label style={{ fontSize: "13px", fontWeight: "bold", color: "#4b5563", display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
-        <span>{label}</span> <span>{value}</span>
-      </label>
-      <input type="range" min={min} max={max} value={value} onChange={e => onChange(Number(e.target.value))} style={{ width: "100%", cursor: "pointer" }} />
-    </div>
-  );
-
-  const calcBrightness = Math.max(0, exposure + (highlight * 0.1) + (shadow * 0.1) + (white * 0.1) - (black * 0.1));
-  const calcContrast = Math.max(0, contrast + (clarity * 0.2) + (dehaze * 0.2));
-  const calcSaturate = Math.max(0, saturation + (vibrance * 0.5));
-  const calcSepia = temperature > 0 ? temperature : 0;
-  const calcHueRotate = Number(tint) + (temperature < 0 ? temperature * -0.5 : 0);
-  const calcBlur = texture < 0 ? Math.abs(texture) * 0.05 : 0;
-  const currentFilterCSS = `brightness(${calcBrightness}%) contrast(${calcContrast}%) saturate(${calcSaturate}%) sepia(${calcSepia}%) hue-rotate(${calcHueRotate}deg) blur(${calcBlur}px)`;
-
   // Lọc danh sách Frame để hiển thị
   const displayedFrames = filterLayout === "all" ? frames : frames.filter(f => (f.layout || "vertical-3") === filterLayout);
 
@@ -282,7 +171,6 @@ const Admin = ({ onBack }) => {
         <h2 style={{ color: "#10b981", textAlign: "center", marginBottom: "30px" }}>🛡️ Admin Panel</h2>
         <button onClick={() => setActiveTab('users')} style={{ background: activeTab === 'users' ? "#374151" : "transparent", border: "none", color: "white", padding: "15px", textAlign: "left", cursor: "pointer", borderRadius: "8px", fontSize: "16px" }}>👥 Quản lý người dùng</button>
         <button onClick={() => setActiveTab('frames')} style={{ background: activeTab === 'frames' ? "#374151" : "transparent", border: "none", color: "white", padding: "15px", textAlign: "left", cursor: "pointer", borderRadius: "8px", fontSize: "16px" }}>🖼️ Quản lý Frame mẫu</button>
-        <button onClick={() => setActiveTab('filters')} style={{ background: activeTab === 'filters' ? "#374151" : "transparent", border: "none", color: "white", padding: "15px", textAlign: "left", cursor: "pointer", borderRadius: "8px", fontSize: "16px" }}>🎨 Quản lý Filter</button>
         <div style={{ marginTop: "auto" }}>
           <button onClick={handleLogout} style={{ background: "#ef4444", border: "none", color: "white", padding: "15px", width: "100%", cursor: "pointer", borderRadius: "8px", fontSize: "16px", fontWeight: "bold" }}>🚪 Đăng xuất</button>
         </div>
@@ -406,118 +294,6 @@ const Admin = ({ onBack }) => {
               )}
             </div>
 
-          </div>
-        )}
-        {activeTab === 'filters' && (
-          <div>
-            <h1 style={{ color: "#111827", marginTop: 0 }}>🎨 Quản lý Filter màu</h1>
-            
-            {!isCreatingFilter ? (
-              // --- MÀN HÌNH 1: DANH SÁCH FILTER ---
-              <>
-                <p style={{ color: "#6b7280" }}>Quản lý danh sách các bộ lọc màu hiện có trên hệ thống.</p>
-                <button onClick={() => setIsCreatingFilter(true)} style={{ padding: "12px 24px", background: "#4f46e5", color: "white", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "bold", marginBottom: "20px", fontSize: "15px" }}>
-                  ➕ Tạo Filter Mới
-                </button>
-                
-                <div style={{ background: "white", padding: "20px", borderRadius: "8px", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: "15px" }}>
-                    {customFilters.length === 0 ? <p style={{ color: "#6b7280", gridColumn: "1/-1", textAlign: "center", padding: "20px" }}>Chưa có filter nào.</p> : customFilters.map(f => (
-                      <div key={f._id} style={{ border: "1px solid #e5e7eb", borderRadius: "8px", padding: "15px", display: "flex", flexDirection: "column", gap: "10px", background: "#f9fafb" }}>
-                        <div style={{ fontWeight: "bold", color: "#111827", fontSize: "16px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }} title={f.name}>
-                          {f.name}
-                        </div>
-                        <button onClick={() => handleDeleteFilter(f._id)} style={{ padding: "8px", background: "#ef4444", color: "white", border: "none", borderRadius: "6px", cursor: "pointer", fontSize: "13px", fontWeight: "bold", marginTop: "auto" }}>🗑️ Xóa</button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </>
-            ) : (
-              // --- MÀN HÌNH 2: TẠO FILTER MỚI ---
-              <>
-                <p style={{ color: "#6b7280" }}>Kéo thanh trượt để tự do sáng tạo màu ảnh mới cho phần mềm.</p>
-                <button onClick={() => setIsCreatingFilter(false)} style={{ padding: "10px 20px", background: "#e5e7eb", color: "#374151", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "bold", marginBottom: "20px", display: "inline-flex", alignItems: "center", gap: "5px" }}>
-                  ⬅️ Quay lại danh sách
-                </button>
-
-                <div style={{ display: "flex", gap: "20px", flexWrap: "wrap" }}>
-                  {/* Cột trái: Form chỉnh màu */}
-                  <div style={{ flex: "1 1 300px", background: "white", padding: "25px", borderRadius: "8px", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}>
-                    <h3 style={{ margin: "0 0 20px 0", color: "#374151" }}>🎛️ Thông số Filter</h3>
-                    
-                    <div style={{ marginBottom: "20px" }}>
-                      <input type="text" placeholder="Tên Filter (VD: Mùa thu)" value={newFilterName} onChange={e => setNewFilterName(e.target.value)} style={{ width: "100%", boxSizing: "border-box", padding: "12px", borderRadius: "6px", border: "1px solid #d1d5db" }} />
-                    </div>
-
-                    <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
-                      <div style={{ background: "#f9fafb", padding: "15px", borderRadius: "8px", border: "1px solid #e5e7eb" }}>
-                        <h4 style={{ margin: "0 0 15px 0", color: "#4f46e5", display: "flex", alignItems: "center", gap: "5px" }}>☀️ Light</h4>
-                        <SliderControl label="Exposure" value={exposure} min="0" max="200" onChange={setExposure} />
-                        <SliderControl label="Contrast" value={contrast} min="0" max="200" onChange={setContrast} />
-                        <SliderControl label="Highlight" value={highlight} min="-100" max="100" onChange={setHighlight} />
-                        <SliderControl label="Shadows" value={shadow} min="-100" max="100" onChange={setShadow} />
-                        <SliderControl label="Whites" value={white} min="-100" max="100" onChange={setWhite} />
-                        <SliderControl label="Blacks" value={black} min="-100" max="100" onChange={setBlack} />
-                      </div>
-
-                      <div style={{ background: "#f9fafb", padding: "15px", borderRadius: "8px", border: "1px solid #e5e7eb" }}>
-                        <h4 style={{ margin: "0 0 15px 0", color: "#f59e0b", display: "flex", alignItems: "center", gap: "5px" }}>🎨 Color</h4>
-                        <SliderControl label="Temperature" value={temperature} min="-100" max="100" onChange={setTemperature} />
-                        <SliderControl label="Tint" value={tint} min="-100" max="100" onChange={setTint} />
-                        <SliderControl label="Vibrance" value={vibrance} min="-100" max="100" onChange={setVibrance} />
-                        <SliderControl label="Saturation" value={saturation} min="0" max="200" onChange={setSaturation} />
-                      </div>
-
-                      <div style={{ background: "#f9fafb", padding: "15px", borderRadius: "8px", border: "1px solid #e5e7eb" }}>
-                        <h4 style={{ margin: "0 0 15px 0", color: "#10b981", display: "flex", alignItems: "center", gap: "5px" }}>✨ Effects</h4>
-                        <SliderControl label="Texture" value={texture} min="-100" max="100" onChange={setTexture} />
-                        <SliderControl label="Clarity" value={clarity} min="-100" max="100" onChange={setClarity} />
-                        <SliderControl label="Dehaze" value={dehaze} min="-100" max="100" onChange={setDehaze} />
-                        <SliderControl label="Vignette" value={vignette} min="-100" max="100" onChange={setVignette} />
-                        <SliderControl label="Grain" value={grain} min="0" max="100" onChange={setGrain} />
-                      </div>
-                    </div>
-
-                    <div style={{ marginTop: "20px", padding: "12px", background: "#f3f4f6", borderRadius: "6px", fontSize: "12px", fontFamily: "monospace", color: "#4f46e5", wordBreak: "break-all" }}>
-                      filter: {currentFilterCSS};
-                    </div>
-
-                    <button onClick={handleSaveFilter} style={{ width: "100%", marginTop: "20px", padding: "14px", background: "#4f46e5", color: "white", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "bold", fontSize: "16px" }}>💾 Lưu Filter này</button>
-                  </div>
-
-                  {/* Cột phải: Preview */}
-                  <div style={{ flex: "2 1 400px", background: "white", padding: "25px", borderRadius: "8px", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-                      <h3 style={{ margin: 0, color: "#374151" }}>👁️ Xem trước màu ảnh</h3>
-                      <label style={{ cursor: "pointer", background: "#f3f4f6", padding: "8px 12px", borderRadius: "6px", fontSize: "13px", fontWeight: "bold", border: "1px solid #d1d5db", color: "#374151", transition: "all 0.2s" }}>
-                        📸 Đổi ảnh mẫu
-                        <input type="file" accept="image/*" onChange={handlePreviewImageChange} style={{ display: "none" }} />
-                      </label>
-                    </div>
-                    <div style={{ position: "relative", width: "100%", height: "450px", backgroundColor: "#f3f4f6", borderRadius: "8px", display: "flex", justifyContent: "center", alignItems: "center", overflow: "hidden" }}>
-                      <img 
-                        src={previewImage} 
-                        alt="Preview" 
-                        style={{ 
-                          maxWidth: "100%", 
-                          maxHeight: "100%", 
-                          objectFit: "contain", 
-                          filter: currentFilterCSS
-                        }} 
-                      />
-                      {/* Lớp phủ hiệu ứng Tối góc (Vignette) giả lập */}
-                      <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, boxShadow: vignette !== 0 ? `inset 0 0 ${Math.abs(vignette) * 1.5}px ${Math.abs(vignette)}px rgba(${vignette < 0 ? '255,255,255' : '0,0,0'}, ${Math.abs(vignette) / 100})` : "none", pointerEvents: "none" }} />
-                      
-                      {/* Lớp phủ hiệu ứng Nhiễu hạt (Grain) giả lập */}
-                      {grain > 0 && (
-                        <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`, opacity: grain / 100, mixBlendMode: "overlay", pointerEvents: "none" }} />
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </>
-            )}
           </div>
         )}
       </div>
