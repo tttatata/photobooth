@@ -34,7 +34,7 @@ const FrameModal = ({ show, onClose, settings, setSettings, sampleFrames }) => {
             <div style={{ fontSize: "14px", textAlign: "center", marginTop: "10px", fontWeight: "bold", color: "#374151" }}>Không dùng</div>
           </div>
           {localPersonalFrame && (
-            <div onClick={() => setSettings({...settings, frame: settings.frame === localPersonalFrame ? null : localPersonalFrame})} className="hover-btn" style={{ position: "relative", border: settings.frame === localPersonalFrame ? "3px solid #8b5cf6" : "1px solid #d1d5db", borderRadius: "10px", cursor: "pointer", padding: "10px", background: "#fff", display: "flex", flexDirection: "column", opacity: settings.frame && settings.frame !== localPersonalFrame ? 0.6 : 1, filter: settings.frame && settings.frame !== localPersonalFrame ? "grayscale(50%)" : "none", transition: "all 0.3s ease", boxShadow: settings.frame === localPersonalFrame ? "0 4px 10px rgba(139, 92, 246, 0.3)" : "none" }}>
+            <div onClick={() => setSettings({...settings, frame: settings.frame === localPersonalFrame ? null : localPersonalFrame, frameId: settings.frame === localPersonalFrame ? null : "local"})} className="hover-btn" style={{ position: "relative", border: settings.frame === localPersonalFrame ? "3px solid #8b5cf6" : "1px solid #d1d5db", borderRadius: "10px", cursor: "pointer", padding: "10px", background: "#fff", display: "flex", flexDirection: "column", opacity: settings.frame && settings.frame !== localPersonalFrame ? 0.6 : 1, filter: settings.frame && settings.frame !== localPersonalFrame ? "grayscale(50%)" : "none", transition: "all 0.3s ease", boxShadow: settings.frame === localPersonalFrame ? "0 4px 10px rgba(139, 92, 246, 0.3)" : "none" }}>
               {settings.frame === localPersonalFrame && <div style={{ position: "absolute", top: "8px", right: "8px", background: "#10b981", color: "white", borderRadius: "50%", width: "26px", height: "26px", display: "flex", justifyContent: "center", alignItems: "center", fontSize: "14px", fontWeight: "bold", zIndex: 10 }}>✓</div>}
               <div style={{ position: "absolute", top: "8px", left: "8px", background: "#3b82f6", color: "white", padding: "2px 6px", borderRadius: "6px", fontSize: "10px", fontWeight: "bold", zIndex: 10 }}>Thiết kế tải lên</div>
               
@@ -44,7 +44,7 @@ const FrameModal = ({ show, onClose, settings, setSettings, sampleFrames }) => {
                   if (window.confirm("Bạn có chắc chắn muốn xóa Frame này khỏi máy?")) {
                     localStorage.removeItem("localPersonalFrame");
                     setLocalPersonalFrame(null);
-                    if (settings.frame === localPersonalFrame) setSettings({...settings, frame: null});
+                    if (settings.frame === localPersonalFrame) setSettings({...settings, frame: null, frameId: null});
                   }
                 }} 
                 style={{ position: "absolute", bottom: "40px", right: "8px", background: "#ef4444", color: "white", border: "none", borderRadius: "50%", width: "26px", height: "26px", cursor: "pointer", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 10, fontSize: "12px" }}
@@ -56,7 +56,7 @@ const FrameModal = ({ show, onClose, settings, setSettings, sampleFrames }) => {
             </div>
           )}
           {sampleFrames.map(f => (
-            <div key={f.id} onClick={() => setSettings({...settings, frame: settings.frame === f.src ? null : f.src})} className="hover-btn" style={{ position: "relative", border: settings.frame === f.src ? "3px solid #8b5cf6" : "1px solid #d1d5db", borderRadius: "10px", cursor: "pointer", padding: "10px", background: "#fff", display: "flex", flexDirection: "column", opacity: settings.frame && settings.frame !== f.src ? 0.6 : 1, filter: settings.frame && settings.frame !== f.src ? "grayscale(50%)" : "none", transition: "all 0.3s ease", boxShadow: settings.frame === f.src ? "0 4px 10px rgba(139, 92, 246, 0.3)" : "none" }}>
+            <div key={f.id} onClick={() => setSettings({...settings, frame: settings.frame === f.src ? null : f.src, frameId: settings.frame === f.src ? null : f.id})} className="hover-btn" style={{ position: "relative", border: settings.frame === f.src ? "3px solid #8b5cf6" : "1px solid #d1d5db", borderRadius: "10px", cursor: "pointer", padding: "10px", background: "#fff", display: "flex", flexDirection: "column", opacity: settings.frame && settings.frame !== f.src ? 0.6 : 1, filter: settings.frame && settings.frame !== f.src ? "grayscale(50%)" : "none", transition: "all 0.3s ease", boxShadow: settings.frame === f.src ? "0 4px 10px rgba(139, 92, 246, 0.3)" : "none" }}>
               {settings.frame === f.src && <div style={{ position: "absolute", top: "8px", right: "8px", background: "#10b981", color: "white", borderRadius: "50%", width: "26px", height: "26px", display: "flex", justifyContent: "center", alignItems: "center", fontSize: "14px", fontWeight: "bold", zIndex: 10 }}>✓</div>}
               <img src={f.src} alt={f.label} style={{ width: "100%", height: "180px", objectFit: "contain", borderRadius: "6px", background: "#e5e7eb" }} />
               <div style={{ fontSize: "14px", textAlign: "center", marginTop: "10px", fontWeight: "bold", color: "#111827", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }} title={f.label}>{f.label}</div>
@@ -131,11 +131,11 @@ const FrameModal = ({ show, onClose, settings, setSettings, sampleFrames }) => {
                 try {
                   localStorage.setItem("localPersonalFrame", base64String); // Lưu vĩnh viễn vào trình duyệt
                   setLocalPersonalFrame(base64String);
-                  setSettings({ ...settings, frame: base64String });
+                  setSettings({ ...settings, frame: base64String, frameId: "local" });
                 } catch (err) {
                   alert("File quá lớn để lưu trữ dài hạn! Frame vẫn có thể dùng tạm, nhưng sẽ mất khi tải lại trang.");
                   setLocalPersonalFrame(base64String);
-                  setSettings({ ...settings, frame: base64String });
+                  setSettings({ ...settings, frame: base64String, frameId: "local" });
                 }
               };
               reader.readAsDataURL(file);

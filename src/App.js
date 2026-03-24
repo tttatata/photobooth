@@ -31,7 +31,7 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
   const [showDrivePickerModal, setShowDrivePickerModal] = useState(false);
   const [folderQrLink, setFolderQrLink] = useState("");
 
-  const [accessToken, setAccessToken] = useState(() => sessionStorage.getItem("gdriveToken") || null); // Token Google Drive
+  const [accessToken, setAccessToken] = useState(null); // Token Google Drive
 
   // State kiểm tra giao diện Mobile / Desktop
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 800);
@@ -50,26 +50,16 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
   const [rawPhotos, setRawPhotos] = useState([]);
   const [selectedPhotos, setSelectedPhotos] = useState([]);
   const [customFrames, setCustomFrames] = useState([]); // Chứa frames từ Backend
-  const [settings, setSettings] = useState(() => {
-    const saved = localStorage.getItem("photoboothSettings");
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {
-        console.error("Lỗi parse settings:", e);
-      }
-    }
-    return {
-      countdown: 3,
-      photoCount: 3,
-      layout: "vertical-3", // Mặc định là 3 ảnh dọc
-      interval: 2,
-      filter: "none",
-      frame: null,
-      useDrive: false, // Bật tắt lưu Google Drive
-      driveFolderId: "", // Thư mục Drive lưu ảnh
-      uploadRawPhotos: false, // Bật tắt lưu ảnh lẻ chưa ghép lên Drive
-    };
+  const [settings, setSettings] = useState({
+    countdown: 3,
+    photoCount: 3,
+    layout: "vertical-3", // Mặc định là 3 ảnh dọc
+    interval: 2,
+    filter: "none",
+    frame: null,
+    useDrive: false, // Bật tắt lưu Google Drive
+    driveFolderId: "", // Thư mục Drive lưu ảnh
+    uploadRawPhotos: false, // Bật tắt lưu ảnh lẻ chưa ghép lên Drive
   });
   const [directoryHandle, setDirectoryHandle] = useState(null);
   const [driveFolders, setDriveFolders] = useState([]);
@@ -78,49 +68,43 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
   const canvasRef = useRef(null);
   const previewVideoRef = useRef(null);
 
-  // Tự động khôi phục thư mục lưu ảnh cục bộ (nếu có) từ IndexedDB khi F5
-  useEffect(() => {
+  const fetchCustomFrames = async () => {
     try {
-      const request = indexedDB.open("PhotoboothDB", 1);
-      request.onupgradeneeded = (e) => {
-        const db = e.target.result;
-        if (!db.objectStoreNames.contains("handles")) db.createObjectStore("handles");
-      };
-      request.onsuccess = (e) => {
-        const db = e.target.result;
-        if (!db.objectStoreNames.contains("handles")) return;
-        const tx = db.transaction("handles", "readonly");
-        const store = tx.objectStore("handles");
-        const getReq = store.get("directoryHandle");
-        getReq.onsuccess = () => {
-          if (getReq.result) setDirectoryHandle(getReq.result);
-        };
-      };
-    } catch (err) { console.error("Lỗi lấy thư mục từ IndexedDB:", err); }
-  }, []);
+      const token = localStorage.getItem("token");
+      const headers = token ? { "Authorization": `Bearer ${token}` } : {};
+      const response = await fetch(`${process.env.REACT_APP_API_URL || ""}/api/frames`, { headers });
+      const data = await response.json();
+      if (data.success) {
+          const framesList = data.frames.map(f => ({ id: f._id, src: f.image, label: f.name, layout: f.layout }));
+          setCustomFrames(framesList);
+          
+          // Tự động khôi phục Frame từ Database nếu trước đó đã chọn
+          setSettings(prev => {
+            if (prev.frameId && prev.frameId !== "local" && !prev.frame) {
+              const matchedFrame = framesList.find(fr => fr.id === prev.frameId);
+              if (matchedFrame) return { ...prev, frame: matchedFrame.src };
+            }
+            return prev;
+          });
+      }
+    } catch (error) {
+      console.error("Lỗi lấy danh sách frame từ backend:", error);
+    }
+  };
 
   // Tải danh sách Frame từ Backend (Database) khi khởi động màn hình chụp
   useEffect(() => {
-    const fetchCustomFrames = async () => {
-      try {
-        const response = await fetch(`${process.env.REACT_APP_API_URL || ""}/api/frames`);
-        const data = await response.json();
-        if (data.success) {
-          setCustomFrames(data.frames.map(f => ({ id: f._id, src: f.image, label: f.name, layout: f.layout })));
-        }
-      } catch (error) {
-        console.error("Lỗi lấy danh sách frame từ backend:", error);
-      }
-    };
     fetchCustomFrames();
   }, []);
 
   // Tự động lưu cài đặt vào bộ nhớ đệm (localStorage) mỗi khi có thay đổi
   useEffect(() => {
     try {
-      localStorage.setItem("photoboothSettings", JSON.stringify(settings));
+      const settingsToSave = { ...settings };
+      delete settingsToSave.frame; // BỎ CHUỖI ẢNH KHỔNG LỒ RA ĐỂ KHÔNG BỊ TRÀN BỘ NHỚ LÚC LƯU
+      localStorage.setItem("photoboothSettings", JSON.stringify(settingsToSave));
     } catch (e) {
-      console.warn("Không thể lưu settings (có thể do dung lượng Frame quá lớn):", e);
+      console.warn("Không thể lưu settings:", e);
     }
   }, [settings]);
 
@@ -155,29 +139,38 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
         const videoDevices = allDevices.filter(device => device.kind === "videoinput");
         setDevices(videoDevices);
 
-        // Nhận diện tự động nếu cắm Sony / Webcam USB
-        const externalCam = videoDevices.find(device => {
-          const label = device.label.toLowerCase();
-          return label.includes("sony") || 
-                 label.includes("imaging edge") || 
-                 label.includes("usb streaming") || 
-                 label.includes("usb video") || 
-                 label.includes("webcam");
-        });
+        // Kiểm tra xem trước đó người dùng đã tự tay chọn Camera nào chưa
+        const savedCameraId = localStorage.getItem("selectedCameraId");
+        const savedDevice = videoDevices.find(d => d.deviceId === savedCameraId);
 
-        if (externalCam) {
-          setSelectedDevice(externalCam.deviceId);
-          startCamera(externalCam.deviceId, true);
-        } else if (videoDevices.length > 0) {
-          // Nếu dùng trên điện thoại, ưu tiên tìm camera sau (back/environment) để có chất lượng tốt nhất
-          const mobileCam = videoDevices.find(device => 
-            device.label.toLowerCase().includes("back") || 
-            device.label.toLowerCase().includes("sau") ||
-            device.label.toLowerCase().includes("environment")
-          );
-          const camToUse = mobileCam || videoDevices[videoDevices.length - 1]; // Thường thiết bị cuối cùng trong danh sách là camera sau
-          setSelectedDevice(camToUse.deviceId);
-          startCamera(camToUse.deviceId, true);
+        if (savedDevice) {
+          setSelectedDevice(savedDevice.deviceId);
+          startCamera(savedDevice.deviceId, true);
+        } else {
+          // Nhận diện tự động nếu cắm Sony / Webcam USB
+          const externalCam = videoDevices.find(device => {
+            const label = device.label.toLowerCase();
+            return label.includes("sony") || 
+                   label.includes("imaging edge") || 
+                   label.includes("usb streaming") || 
+                   label.includes("usb video") || 
+                   label.includes("webcam");
+          });
+  
+          if (externalCam) {
+            setSelectedDevice(externalCam.deviceId);
+            startCamera(externalCam.deviceId, true);
+          } else if (videoDevices.length > 0) {
+            // Nếu dùng trên điện thoại, ưu tiên tìm camera sau (back/environment)
+            const mobileCam = videoDevices.find(device => 
+              device.label.toLowerCase().includes("back") || 
+              device.label.toLowerCase().includes("sau") ||
+              device.label.toLowerCase().includes("environment")
+            );
+            const camToUse = mobileCam || videoDevices[videoDevices.length - 1];
+            setSelectedDevice(camToUse.deviceId);
+            startCamera(camToUse.deviceId, true);
+          }
         }
         tempStream.getTracks().forEach(track => track.stop());
       } catch (error) {
@@ -317,7 +310,6 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
       callback: async (response) => {
         if (response.access_token) {
           setAccessToken(response.access_token);
-          sessionStorage.setItem("gdriveToken", response.access_token);
           setSettings({ ...settings, useDrive: true });
           
           try {
@@ -396,14 +388,6 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
     try {
       const handle = await window.showDirectoryPicker();
       setDirectoryHandle(handle);
-      
-      // Lưu lại Handle vào IndexedDB để không bị mất khi F5
-      const request = indexedDB.open("PhotoboothDB", 1);
-      request.onsuccess = (e) => {
-        const db = e.target.result;
-        const tx = db.transaction("handles", "readwrite");
-        tx.objectStore("handles").put(handle, "directoryHandle");
-      };
     } catch (error) {
       console.error("Lỗi chọn thư mục:", error);
     }
@@ -413,15 +397,6 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
   const saveImageToLocal = async (dataUrl, filename) => {
     if (!directoryHandle) return;
     try {
-      // Yêu cầu quyền ghi lại nếu người dùng vừa F5 tải lại trang
-      if ((await directoryHandle.queryPermission({ mode: 'readwrite' })) !== 'granted') {
-        const permission = await directoryHandle.requestPermission({ mode: 'readwrite' });
-        if (permission !== 'granted') {
-          console.error("Không có quyền ghi vào thư mục");
-          return;
-        }
-      }
-
       const fileHandle = await directoryHandle.getFileHandle(filename, { create: true });
       const writable = await fileHandle.createWritable();
       const response = await fetch(dataUrl);
@@ -639,6 +614,7 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
         } 
       });
       setStream(s);
+      localStorage.setItem("selectedCameraId", id); // GHI NHỚ MÁY ẢNH VÀO BỘ NHỚ!
       if (videoRef.current) {
         videoRef.current.srcObject = s;
       }
@@ -1120,7 +1096,7 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
       <SettingsModal show={showSettingsModal} onClose={() => setShowSettingsModal(false)} devices={devices} selectedDevice={selectedDevice} setSelectedDevice={setSelectedDevice} startCamera={startCamera} previewVideoRef={previewVideoRef} stream={stream} settings={settings} setSettings={setSettings} selectDirectory={selectDirectory} directoryHandle={directoryHandle} accessToken={accessToken} driveFolders={driveFolders} createDriveFolder={createDriveFolder} showFolderQr={showSelectedFolderQr} onOpenDrivePicker={() => setShowDrivePickerModal(true)} />
       <DrivePickerModal show={showDrivePickerModal} onClose={() => setShowDrivePickerModal(false)} driveFolders={driveFolders} onSelectFolder={(id) => setSettings({ ...settings, driveFolderId: id })} onCreateFolder={createDriveFolder} selectedFolderId={settings.driveFolderId} />
       <LayoutModal show={showLayoutModal} onClose={() => setShowLayoutModal(false)} settings={settings} setSettings={setSettings} />
-      <FrameModal show={showFrameModal} onClose={() => setShowFrameModal(false)} settings={settings} setSettings={setSettings} sampleFrames={sampleFrames} />
+      <FrameModal show={showFrameModal} onClose={() => setShowFrameModal(false)} settings={settings} setSettings={setSettings} sampleFrames={sampleFrames} onRefreshFrames={fetchCustomFrames} />
       <GalleryModal show={showGalleryModal} onClose={() => setShowGalleryModal(false)} photos={photos} rawPhotos={rawPhotos} selectedPhotos={selectedPhotos} toggleSelect={toggleSelect} printPhoto={printPhoto} onPrintAny={() => setShowPrintModal(true)} />
       <QrModal show={showFolderQrModal} onClose={() => setShowFolderQrModal(false)} qrLink={folderQrLink} title="📁 Thư mục sự kiện" description="Quét mã QR này để xem và tải về toàn bộ ảnh của sự kiện." />
       {showPrintModal && <PrintModal photoUrl={photoToPrint} onClose={() => setShowPrintModal(false)} />}
