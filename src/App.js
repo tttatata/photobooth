@@ -17,6 +17,7 @@ import FilterSelector from "./component/FilterSelector";
 import MobileControls from "./component/MobileControls";
 import DesktopControls from "./component/DesktopControls";
 import CaptureActionButtons from "./component/CaptureActionButtons";
+import PhotoTest from "./pages/PhotoTest";
 
 
 function PhotoboothMain() {
@@ -60,6 +61,7 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
     useDrive: false, // Bật tắt lưu Google Drive
     driveFolderId: "", // Thư mục Drive lưu ảnh
     uploadRawPhotos: false, // Bật tắt lưu ảnh lẻ chưa ghép lên Drive
+    mirrorCamera: true, // Mặc định bật chế độ lật hình ảnh
   });
   const [directoryHandle, setDirectoryHandle] = useState(null);
   const [driveFolders, setDriveFolders] = useState([]);
@@ -635,8 +637,7 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
     const layout = currentSettings.layout || "vertical-3";
 
     // --- BẢNG CẤU HÌNH TỌA ĐỘ ẢNH CHUẨN ĐỂ THIẾT KẾ TRÊN CANVA ---
-    // Bạn hãy chỉnh sửa các con số dx (tọa độ X), dy (tọa độ Y), dw (chiều rộng), dh (chiều cao) 
-    // để khớp chính xác với thiết kế của bạn trên Canva.
+    // Dùng làm phương án dự phòng (Fallback) nếu Frame không được đục lỗ
     const layoutConfigs = {
       "single": {
         width: 1800, height: 1200,
@@ -650,7 +651,7 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
         ]
       },
       "vertical-3": {
-        width: 1200, height: 1800, // Đảm bảo kích thước này bằng đúng kích thước gốc file PNG của bạn
+        width: 1200, height: 1800,
         boxes: [
           { dx: 180, dy: 30, dw: 840, dh: 560 },
           { dx: 180, dy: 620, dw: 840, dh: 560 },
@@ -686,47 +687,214 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
     const config = layoutConfigs[layout] || layoutConfigs["vertical-3"];
     canvas.width = config.width;
     canvas.height = config.height;
+    let finalBoxes = config.boxes;
+    let frameImg = null;
+    let usedSmartDetection = false;
 
-    // Tô nền trắng
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    if (currentSettings.frame) {
+      frameImg = new Image();
+      frameImg.crossOrigin = "anonymous";
+      await new Promise((resolve) => {
+        frameImg.onload = resolve;
+        frameImg.onerror = resolve;
+        frameImg.src = currentSettings.frame;
+      });
 
-    // Chuyển Base64 thành Image object
+      // --- THUẬT TOÁN AUTO-DETECT QUÉT LỖ TRONG SUỐT VÀ MÀU TRẮNG ---
+      if (frameImg.width > 0 && frameImg.height > 0) {
+        canvas.width = frameImg.width;
+        canvas.height = frameImg.height;
+        
+        const scale = 0.1;
+        const smallCanvas = document.createElement("canvas");
+        smallCanvas.width = Math.floor(canvas.width * scale) || 1;
+        smallCanvas.height = Math.floor(canvas.height * scale) || 1;
+        const smallCtx = smallCanvas.getContext("2d");
+        smallCtx.drawImage(frameImg, 0, 0, smallCanvas.width, smallCanvas.height);
+        
+        const imageData = smallCtx.getImageData(0, 0, smallCanvas.width, smallCanvas.height);
+        const data = imageData.data;
+        const width = smallCanvas.width;
+        const height = smallCanvas.height;
+        const visited = new Uint8Array(width * height);
+        const holes = [];
+
+        const isHolePixel = (idx) => {
+          const r = data[idx * 4];
+          const g = data[idx * 4 + 1];
+          const b = data[idx * 4 + 2];
+          const a = data[idx * 4 + 3];
+          return a < 128 || (r > 240 && g > 240 && b > 240 && a > 200);
+        };
+
+        for (let y = 0; y < height; y++) {
+          for (let x = 0; x < width; x++) {
+            const idx = y * width + x;
+            if (!visited[idx] && isHolePixel(idx)) {
+              let minX = x, maxX = x, minY = y, maxY = y;
+              const queue = [idx];
+              visited[idx] = 1;
+              let head = 0;
+              
+              while(head < queue.length) {
+                const currIdx = queue[head++];
+                const cx = currIdx % width;
+                const cy = Math.floor(currIdx / width);
+
+                if (cx < minX) minX = cx;
+                if (cx > maxX) maxX = cx;
+                if (cy < minY) minY = cy;
+                if (cy > maxY) maxY = cy;
+
+                const neighbors = [];
+                if (cx > 0) neighbors.push(currIdx - 1);
+                if (cx < width - 1) neighbors.push(currIdx + 1);
+                if (cy > 0) neighbors.push(currIdx - width);
+                if (cy < height - 1) neighbors.push(currIdx + width);
+
+                for(let i=0; i<neighbors.length; i++) {
+                  const ni = neighbors[i];
+                  if (!visited[ni] && isHolePixel(ni)) {
+                    visited[ni] = 1;
+                    queue.push(ni);
+                  }
+                }
+              }
+              const w = maxX - minX + 1;
+              const h = maxY - minY + 1;
+              if (w > width * 0.05 && h > height * 0.05) { 
+                holes.push({ dx: Math.floor(minX / scale), dy: Math.floor(minY / scale), dw: Math.floor(w / scale), dh: Math.floor(h / scale) });
+              }
+            }
+          }
+        }
+
+        holes.sort((a, b) => {
+          if (Math.abs(a.dy - b.dy) > (50 / scale)) return a.dy - b.dy;
+          return a.dx - b.dx;
+        });
+
+        if (holes.length > 0) {
+          finalBoxes = holes;
+          usedSmartDetection = true;
+        } else {
+          // Dự phòng nếu tải lên Frame nhưng không đục lỗ: scale theo config gốc
+          const scaleX = frameImg.width / config.width;
+          const scaleY = frameImg.height / config.height;
+          finalBoxes = config.boxes.map(box => ({ dx: box.dx * scaleX, dy: box.dy * scaleY, dw: box.dw * scaleX, dh: box.dh * scaleY }));
+        }
+      }
+    }
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
     const loadedImages = await Promise.all(
       images.map(
         (src) =>
           new Promise((resolve) => {
             const img = new Image();
+            img.crossOrigin = "anonymous";
             img.onload = () => resolve(img);
+            img.onerror = () => resolve(img);
             img.src = src;
           })
       )
     );
 
-    // --- BƯỚC 1: VẼ HÌNH ẢNH CHỤP LÊN THEO TỌA ĐỘ Ở TRÊN ---
-    loadedImages.forEach((img, index) => {
-      const box = config.boxes[index];
-      if (!box) return; // Tránh lỗi nếu số ảnh chụp lớn hơn số ô thiết kế
+    if (usedSmartDetection && frameImg) {
+      // --- PHƯƠNG PHÁP 1: LUỒN ẢNH RA SAU KHUNG (THÔNG MINH) ---
+      ctx.drawImage(frameImg, 0, 0);
 
-      // Áp dụng filter trước khi vẽ từng ảnh nếu có
-      if (currentSettings.filter && currentSettings.filter !== "none") {
-        ctx.filter = currentSettings.filter;
-      } else {
-        ctx.filter = "none";
+      const frameData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const fData = frameData.data;
+      for (let i = 0; i < finalBoxes.length; i++) {
+        const box = finalBoxes[i];
+        const margin = 10; 
+        const startX = Math.max(0, box.dx - margin);
+        const startY = Math.max(0, box.dy - margin);
+        const endX = Math.min(canvas.width, box.dx + box.dw + margin);
+        const endY = Math.min(canvas.height, box.dy + box.dh + margin);
+
+        for (let y = startY; y < endY; y++) {
+          for (let x = startX; x < endX; x++) {
+            const idx = (y * canvas.width + x) * 4;
+            // Tẩy lỗ trắng
+            if (fData[idx] > 240 && fData[idx + 1] > 240 && fData[idx + 2] > 240 && fData[idx + 3] > 200) {
+              fData[idx + 3] = 0; 
+            }
+          }
+        }
       }
-      ctx.drawImage(img, box.dx, box.dy, box.dw, box.dh);
-      ctx.filter = "none"; // reset filter
-    });
+      ctx.putImageData(frameData, 0, 0);
 
-    // --- BƯỚC 2: VẼ FRAME ĐÈ LÊN TRÊN CÙNG (VẼ TRÊN ẢNH) ---
-    // Những ô chứa ảnh của Frame phải trong suốt (Transparent) để lộ ảnh bên dưới ra.
-    if (currentSettings.frame) {
-      const frameImg = new Image();
-      await new Promise((resolve) => {
-        frameImg.onload = resolve;
-        frameImg.src = currentSettings.frame;
+      ctx.globalCompositeOperation = 'destination-over';
+
+      for (let i = 0; i < finalBoxes.length; i++) {
+        const box = finalBoxes[i];
+        const img = loadedImages[i % loadedImages.length];
+
+        if (!img || !img.width) continue;
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(box.dx, box.dy, box.dw, box.dh);
+        ctx.clip();
+
+        if (currentSettings.filter && currentSettings.filter !== "none") {
+          ctx.filter = currentSettings.filter;
+        }
+
+        const imgRatio = img.width / img.height;
+        const boxRatio = box.dw / box.dh;
+        let drawW = box.dw, drawH = box.dh, offsetX = box.dx, offsetY = box.dy;
+        if (imgRatio > boxRatio) { drawW = box.dh * imgRatio; offsetX = box.dx - (drawW - box.dw) / 2; } 
+        else { drawH = box.dw / imgRatio; offsetY = box.dy - (drawH - box.dh) / 2; }
+
+        ctx.drawImage(img, offsetX, offsetY, drawW, drawH);
+        ctx.restore();
+      }
+
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.globalCompositeOperation = 'source-over';
+
+    } else {
+      // --- PHƯƠNG PHÁP 2: VẼ ĐÈ FRAME LÊN TRÊN (DỰ PHÒNG CŨ) ---
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      loadedImages.forEach((img, index) => {
+        const box = finalBoxes[index];
+        if (!box || !img.width) return;
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(box.dx, box.dy, box.dw, box.dh);
+        ctx.clip();
+
+        if (currentSettings.filter && currentSettings.filter !== "none") {
+          ctx.filter = currentSettings.filter;
+        }
+
+        const imgRatio = img.width / img.height;
+        const boxRatio = box.dw / box.dh;
+        let drawW = box.dw, drawH = box.dh, offsetX = box.dx, offsetY = box.dy;
+        
+        if (imgRatio > boxRatio) {
+          drawW = box.dh * imgRatio;
+          offsetX = box.dx - (drawW - box.dw) / 2;
+        } else {
+          drawH = box.dw / imgRatio;
+          offsetY = box.dy - (drawH - box.dh) / 2;
+        }
+
+        ctx.drawImage(img, offsetX, offsetY, drawW, drawH);
+        ctx.restore(); 
       });
-      ctx.drawImage(frameImg, 0, 0, canvas.width, canvas.height);
+
+      if (frameImg && frameImg.width) {
+        ctx.drawImage(frameImg, 0, 0, canvas.width, canvas.height);
+      }
     }
 
     // Xuất ra Base64 và lưu vào Gallery
@@ -772,14 +940,18 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
         offsetY = (PHOTO_HEIGHT - drawHeight) / 2;
       }
 
-      // Lật ngược ảnh ngang (Mirror) trước khi vẽ để giống hệt giao diện xem trước (như soi gương)
-      ctx.translate(canvas.width, 0);
-      ctx.scale(-1, 1);
+      // Lưu trạng thái gốc của canvas
+      ctx.save();
+      // Nếu bật chế độ lật gương, lật canvas trước khi vẽ
+      if (settings.mirrorCamera !== false) {
+        ctx.translate(canvas.width, 0);
+        ctx.scale(-1, 1);
+      }
 
       ctx.drawImage(video, offsetX, offsetY, drawWidth, drawHeight);
       
-      // Trả lại trạng thái mặc định của canvas để không làm hỏng thiết lập sau này
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      // Khôi phục lại trạng thái gốc để không làm hỏng các bước vẽ sau này (nếu có)
+      ctx.restore();
 
       const dataUrl = canvas.toDataURL("image/png");
       
@@ -990,6 +1162,16 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
           <div className="video-wrapper" style={{ width: "100%", aspectRatio: `${PHOTO_WIDTH} / ${PHOTO_HEIGHT}`, backgroundColor: "#1f2937", border: "4px solid #374151", borderRadius: "16px", display: "flex", justifyContent: "center", alignItems: "center", position: "relative" }}>
             {stream && <div className="live-badge">LIVE</div>}
             
+            {/* Nút lật camera trực tiếp trên màn hình Mobile */}
+            {stream && (
+              <button 
+                onClick={() => setSettings({...settings, mirrorCamera: settings.mirrorCamera !== false ? false : true})}
+                style={{ position: "absolute", top: "15px", left: "15px", background: "rgba(0,0,0,0.5)", color: "white", border: "none", borderRadius: "50%", width: "40px", height: "40px", fontSize: "20px", cursor: "pointer", zIndex: 20, display: "flex", justifyContent: "center", alignItems: "center", backdropFilter: "blur(4px)" }}
+              >
+                🪞
+              </button>
+            )}
+
             {!stream && !isCameraLoading && (
               <div style={{ position: "absolute", textAlign: "center", color: "#9ca3af", zIndex: 5 }}>
                 <div style={{ fontSize: "40px", marginBottom: "5px" }}>📷</div>
@@ -1003,7 +1185,7 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
                 <h3 style={{ margin: 0, fontSize: "16px" }}>Đang kết nối...</h3>
               </div>
             )}
-            <video ref={videoRef} autoPlay muted playsInline style={{ width: "100%", height: "100%", filter: settings.filter, display: stream ? "block" : "none", objectFit: "cover", opacity: isCameraLoading ? 0.3 : 1, transition: "opacity 0.3s" }} />
+            <video ref={videoRef} autoPlay muted playsInline style={{ width: "100%", height: "100%", filter: settings.filter, display: stream ? "block" : "none", objectFit: "cover", opacity: isCameraLoading ? 0.3 : 1, transition: "opacity 0.3s", transform: settings.mirrorCamera !== false ? "scaleX(-1)" : "none" }} />
             
             {isCapturing && <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", background: "rgba(0,0,0,0.8)", color: "white", padding: "12px 20px", borderRadius: "20px", fontSize: "18px", fontWeight: "bold", zIndex: 20 }}>📸 Đang chụp...</div>}
             {currentPhotoIndex !== null && <div style={{ position: "absolute", top: "10px", left: "50%", transform: "translateX(-50%)", background: "rgba(0,0,0,0.7)", color: "white", padding: "6px 12px", borderRadius: "15px", fontSize: "12px", fontWeight: "bold", zIndex: 10 }}>Chụp: {currentPhotoIndex} {typeof currentPhotoIndex === 'number' ? `/ ${settings.photoCount}` : ''}</div>}
@@ -1053,6 +1235,18 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
             <div className="video-wrapper" style={{ width: `${PHOTO_WIDTH}px`, height: `${PHOTO_HEIGHT}px`, backgroundColor: "#e5e7eb", display: "flex", justifyContent: "center", alignItems: "center" }}>
               {stream && <div className="live-badge">LIVE</div>}
               
+              {/* Nút lật camera trực tiếp trên màn hình Desktop */}
+              {stream && (
+                <button 
+                  onClick={() => setSettings({...settings, mirrorCamera: settings.mirrorCamera !== false ? false : true})}
+                  className="hover-btn"
+                  style={{ position: "absolute", top: "20px", left: "20px", background: "rgba(0,0,0,0.5)", color: "white", border: "none", borderRadius: "50%", width: "45px", height: "45px", fontSize: "22px", cursor: "pointer", zIndex: 20, display: "flex", justifyContent: "center", alignItems: "center", backdropFilter: "blur(4px)" }}
+                  title="Lật Camera (Soi gương)"
+                >
+                  🪞
+                </button>
+              )}
+
               {!stream && !isCameraLoading && (
                 <div style={{ position: "absolute", textAlign: "center", color: "#6b7280", zIndex: 5, padding: "20px" }}>
                   <div style={{ fontSize: "60px", marginBottom: "15px" }}>📷</div>
@@ -1068,7 +1262,7 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
                 </div>
               )}
 
-              <video ref={videoRef} autoPlay muted playsInline style={{ width: "100%", height: "100%", filter: settings.filter, display: stream ? "block" : "none", objectFit: "cover", opacity: isCameraLoading ? 0.3 : 1, transition: "opacity 0.3s" }} />
+              <video ref={videoRef} autoPlay muted playsInline style={{ width: "100%", height: "100%", filter: settings.filter, display: stream ? "block" : "none", objectFit: "cover", opacity: isCameraLoading ? 0.3 : 1, transition: "opacity 0.3s", transform: settings.mirrorCamera !== false ? "scaleX(-1)" : "none" }} />
 
               {/* Overlays */}
               {isCapturing && (
@@ -1131,6 +1325,7 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
         } 
       />
       <Route path="/app" element={renderApp()} />
+      <Route path="/phototest" element={<PhotoTest />} />
     </Routes>
   );
 }

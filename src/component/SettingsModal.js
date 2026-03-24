@@ -14,9 +14,14 @@ const SettingsModal = ({ show, onClose, devices, selectedDevice, setSelectedDevi
           {devices.map((device) => ( <option key={device.deviceId} value={device.deviceId}>{device.label || `Camera ${device.deviceId}`}</option> ))}
         </select>
 
+        <label style={{ fontWeight: "bold", display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
+          <input type="checkbox" checked={settings.mirrorCamera !== false} onChange={(e) => setSettings({...settings, mirrorCamera: e.target.checked})} style={{ width: "18px", height: "18px", cursor: "pointer" }} />
+          🪞 Lật hình ảnh (Soi gương)
+        </label>
+
         <div style={{ width: "100%", height: "180px", backgroundColor: "#111827", borderRadius: "8px", overflow: "hidden", display: "flex", justifyContent: "center", alignItems: "center", position: "relative" }}>
           {!stream && ( <div style={{ position: "absolute", color: "#9ca3af", textAlign: "center", zIndex: 1 }}><div style={{ fontSize: "24px", marginBottom: "5px" }}>📷</div>Vui lòng chọn camera</div> )}
-          <video ref={previewVideoRef} autoPlay muted playsInline style={{ height: "100%", maxWidth: "100%", objectFit: "contain", zIndex: 2, opacity: stream ? 1 : 0, transform: "scaleX(-1)" }} />
+          <video ref={previewVideoRef} autoPlay muted playsInline style={{ height: "100%", maxWidth: "100%", objectFit: "contain", zIndex: 2, opacity: stream ? 1 : 0, transform: settings.mirrorCamera !== false ? "scaleX(-1)" : "none" }} />
         </div>
         <div style={{ textAlign: "center", color: "#6b7280", fontSize: "12px", marginTop: "-5px", fontStyle: "italic" }}>Camera preview</div>
         

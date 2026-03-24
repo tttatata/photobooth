@@ -12,6 +12,7 @@ const Admin = ({ onBack }) => {
   const [newFrameImage, setNewFrameImage] = useState("");
   const [newFrameLayout, setNewFrameLayout] = useState("vertical-3");
   const [isLoadingFrames, setIsLoadingFrames] = useState(false);
+  const [showTestPreview, setShowTestPreview] = useState(false); // Nút bật tắt chế độ Test
   const [filterLayout, setFilterLayout] = useState("all"); // State lọc danh sách Frame
 
   // Tự động gọi API lấy danh sách người dùng khi mở tab 'users'
@@ -162,6 +163,32 @@ const Admin = ({ onBack }) => {
     }
   };
 
+  // Hàm Test Preview Frame: Lồng ghép giả lập khung ảnh và vùng trống
+  const renderTestFramePreview = () => {
+    if (!newFrameImage) return null;
+    const layoutConfigs = {
+      "single": { width: 1800, height: 1200, boxes: [ { dx: 150, dy: 100, dw: 1500, dh: 1000 } ] },
+      "vertical-2": { width: 1200, height: 1800, boxes: [ { dx: 75, dy: 133, dw: 1050, dh: 700 }, { dx: 75, dy: 966, dw: 1050, dh: 700 } ] },
+      "vertical-3": { width: 1200, height: 1800, boxes: [ { dx: 180, dy: 30, dw: 840, dh: 560 }, { dx: 180, dy: 620, dw: 840, dh: 560 }, { dx: 180, dy: 1210, dw: 840, dh: 560 } ] },
+      "grid-4": { width: 1800, height: 1200, boxes: [ { dx: 66, dy: 44, dw: 800, dh: 533 }, { dx: 934, dy: 44, dw: 800, dh: 533 }, { dx: 66, dy: 623, dw: 800, dh: 533 }, { dx: 934, dy: 623, dw: 800, dh: 533 } ] },
+      "grid-6": { width: 1200, height: 1800, boxes: [ { dx: 66, dy: 200, dw: 500, dh: 333 }, { dx: 634, dy: 200, dw: 500, dh: 333 }, { dx: 66, dy: 650, dw: 500, dh: 333 }, { dx: 634, dy: 650, dw: 500, dh: 333 }, { dx: 66, dy: 1100, dw: 500, dh: 333 }, { dx: 634, dy: 1100, dw: 500, dh: 333 } ] },
+      "grid-8": { width: 1200, height: 1800, boxes: [ { dx: 60, dy: 88, dw: 510, dh: 340 }, { dx: 630, dy: 88, dw: 510, dh: 340 }, { dx: 60, dy: 516, dw: 510, dh: 340 }, { dx: 630, dy: 516, dw: 510, dh: 340 }, { dx: 60, dy: 944, dw: 510, dh: 340 }, { dx: 630, dy: 944, dw: 510, dh: 340 }, { dx: 60, dy: 1372, dw: 510, dh: 340 }, { dx: 630, dy: 1372, dw: 510, dh: 340 } ] }
+    };
+    const config = layoutConfigs[newFrameLayout];
+    if (!config) return null;
+    
+    return (
+      <div style={{ position: "relative", width: "200px", height: `${200 * (config.height / config.width)}px`, border: "2px solid #10b981", borderRadius: "8px", overflow: "hidden", background: "url('data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"20\" height=\"20\"><rect width=\"10\" height=\"10\" fill=\"%23e5e7eb\"/><rect x=\"10\" y=\"10\" width=\"10\" height=\"10\" fill=\"%23e5e7eb\"/><rect x=\"10\" width=\"10\" height=\"10\" fill=\"%23f9fafb\"/><rect y=\"10\" width=\"10\" height=\"10\" fill=\"%23f9fafb\"/></svg>')" }}>
+        {config.boxes.map((box, i) => (
+          <div key={i} style={{ position: "absolute", left: `${(box.dx / config.width) * 100}%`, top: `${(box.dy / config.height) * 100}%`, width: `${(box.dw / config.width) * 100}%`, height: `${(box.dh / config.height) * 100}%`, background: "rgba(79, 70, 229, 0.4)", display: "flex", justifyContent: "center", alignItems: "center", color: "white", fontWeight: "bold", border: "2px dashed #4f46e5", boxSizing: "border-box" }}>
+            Ảnh {i+1}
+          </div>
+        ))}
+        <img src={newFrameImage} alt="Preview" style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "contain", zIndex: 10, pointerEvents: "none" }} />
+      </div>
+    );
+  };
+
   // Lọc danh sách Frame để hiển thị
   const displayedFrames = filterLayout === "all" ? frames : frames.filter(f => (f.layout || "vertical-3") === filterLayout);
 
@@ -173,8 +200,17 @@ const Admin = ({ onBack }) => {
         <button onClick={() => setActiveTab('users')} style={{ background: activeTab === 'users' ? "#374151" : "transparent", border: "none", color: "white", padding: "15px", textAlign: "left", cursor: "pointer", borderRadius: "8px", fontSize: "16px" }}>👥 Quản lý người dùng</button>
         <button onClick={() => setActiveTab('frames')} style={{ background: activeTab === 'frames' ? "#374151" : "transparent", border: "none", color: "white", padding: "15px", textAlign: "left", cursor: "pointer", borderRadius: "8px", fontSize: "16px" }}>🖼️ Quản lý Frame mẫu</button>
         <button onClick={() => setActiveTab('filters')} style={{ background: activeTab === 'filters' ? "#374151" : "transparent", border: "none", color: "white", padding: "15px", textAlign: "left", cursor: "pointer", borderRadius: "8px", fontSize: "16px" }}>✨ Quản lý Filter</button>
+         <div style={{ marginTop: "auto" }}>
+       <button 
+            onClick={() => window.location.href = "/phototest"}
+            style={{ padding: "10px 20px", border: "none", backgroundColor: "#f59e0b", color: "white", borderRadius: "30px", cursor: "pointer", fontWeight: "bold" }}
+          >
+            🧪 Test Frame Auto
+          </button> 
+        </div>
         <div style={{ marginTop: "auto" }}>
           <button onClick={handleLogout} style={{ background: "#ef4444", border: "none", color: "white", padding: "15px", width: "100%", cursor: "pointer", borderRadius: "8px", fontSize: "16px", fontWeight: "bold" }}>🚪 Đăng xuất</button>
+       
         </div>
       </div>
 
@@ -251,9 +287,15 @@ const Admin = ({ onBack }) => {
                 </div>
                 {newFrameImage && (
                   <div>
-                    <p style={{ margin: "0 0 10px 0", fontSize: "14px", color: "#6b7280", fontWeight: "bold" }}>Bản xem trước Frame:</p>
-                    {/* Sử dụng nền caro bằng SVG để làm nổi bật vùng trong suốt của ảnh PNG */}
-                    <img src={newFrameImage} alt="Preview" style={{ height: "150px", objectFit: "contain", border: "1px solid #e5e7eb", borderRadius: "8px", background: "url('data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"20\" height=\"20\"><rect width=\"10\" height=\"10\" fill=\"%23e5e7eb\"/><rect x=\"10\" y=\"10\" width=\"10\" height=\"10\" fill=\"%23e5e7eb\"/><rect x=\"10\" width=\"10\" height=\"10\" fill=\"%23f9fafb\"/><rect y=\"10\" width=\"10\" height=\"10\" fill=\"%23f9fafb\"/></svg>')" }} />
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
+                      <p style={{ margin: 0, fontSize: "14px", color: "#6b7280", fontWeight: "bold" }}>Bản xem trước Frame:</p>
+                      <button onClick={() => setShowTestPreview(!showTestPreview)} style={{ padding: "4px 8px", fontSize: "12px", background: showTestPreview ? "#10b981" : "#e5e7eb", color: showTestPreview ? "white" : "#374151", border: "none", borderRadius: "4px", cursor: "pointer", fontWeight: "bold", transition: "0.2s" }}>
+                        {showTestPreview ? "👁️ Đang Test Lệch" : "🔍 Test Lệch Ảnh"}
+                      </button>
+                    </div>
+                    {showTestPreview ? renderTestFramePreview() : (
+                      <img src={newFrameImage} alt="Preview" style={{ height: "150px", objectFit: "contain", border: "1px solid #e5e7eb", borderRadius: "8px", background: "url('data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"20\" height=\"20\"><rect width=\"10\" height=\"10\" fill=\"%23e5e7eb\"/><rect x=\"10\" y=\"10\" width=\"10\" height=\"10\" fill=\"%23e5e7eb\"/><rect x=\"10\" width=\"10\" height=\"10\" fill=\"%23f9fafb\"/><rect y=\"10\" width=\"10\" height=\"10\" fill=\"%23f9fafb\"/></svg>')" }} />
+                    )}
                   </div>
                 )}
               </div>
