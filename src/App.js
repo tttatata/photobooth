@@ -84,22 +84,6 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
     fetchCustomFrames();
   }, []);
 
-  // Tải danh sách Filter tùy chỉnh từ Backend
-  useEffect(() => {
-    const fetchCustomFilters = async () => {
-      try {
-        const response = await fetch(`${process.env.REACT_APP_API_URL || ""}/api/filters`);
-        const data = await response.json();
-        if (data.success) {
-          setCustomFilters(data.filters.map(f => ({ id: f._id, label: f.name, filter: f.filter, icon: f.icon || "✨" })));
-        }
-      } catch (error) {
-        console.error("Lỗi lấy danh sách filter từ backend:", error);
-      }
-    };
-    fetchCustomFilters();
-  }, []);
-
   // Tự động sinh danh sách Frame mẫu và gộp với Frame tùy chỉnh từ Cơ sở dữ liệu
   const sampleFrames = useMemo(() => {
     // Lọc các frame được upload từ database theo layout người dùng đang chọn
@@ -1048,7 +1032,6 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
 
             {/* --- Thanh Sidebar Cuộn Chọn Filter --- */}
             <FilterSelector settings={settings} setSettings={setSettings} isMobile={false} maxHeight={`${PHOTO_HEIGHT}px`} />
-            <FilterSelector settings={settings} setSettings={setSettings} isMobile={false} maxHeight={`${PHOTO_HEIGHT}px`} customFilters={customFilters} />
 
           </div>
 
