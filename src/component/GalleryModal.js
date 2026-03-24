@@ -2,6 +2,7 @@ import React, { useState } from "react";
 
 const GalleryModal = ({ show, onClose, photos, rawPhotos, selectedPhotos, toggleSelect, printPhoto, onPrintAny }) => {
   const [activeTab, setActiveTab] = useState("collages"); // "collages" | "raw"
+  const [previewPhoto, setPreviewPhoto] = useState(null); // State lưu ảnh đang được xem trước
 
   if (!show) return null;
 
@@ -38,9 +39,15 @@ const GalleryModal = ({ show, onClose, photos, rawPhotos, selectedPhotos, toggle
           </div>
 
           <div style={{ display: "flex", gap: "10px" }}>
-            <button className="hover-btn" onClick={onPrintAny} style={{ padding: "10px 20px", background: "#111827", color: "white", borderRadius: "10px", border: "none", cursor: "pointer", fontWeight: "bold", display: "flex", alignItems: "center", gap: "8px" }}>
+            <label className="hover-btn" style={{ padding: "10px 20px", background: "#111827", color: "white", borderRadius: "10px", border: "none", cursor: "pointer", fontWeight: "bold", display: "flex", alignItems: "center", gap: "8px" }}>
               🖨️ In ảnh từ máy tính
-            </button>
+              <input type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => {
+                if (e.target.files && e.target.files[0]) {
+                  const url = URL.createObjectURL(e.target.files[0]);
+                  printPhoto(url); // Mở Modal in với ảnh vừa tải lên từ máy tính
+                }
+              }} />
+            </label>
           </div>
         </div>
 
@@ -66,6 +73,7 @@ const GalleryModal = ({ show, onClose, photos, rawPhotos, selectedPhotos, toggle
                     </div>
                     <div style={{ display: "flex", gap: "10px", marginTop: "15px" }}>
                       <button className="hover-btn" onClick={() => printPhoto(photo)} style={{ flex: 1, padding: "10px", background: "#10b981", color: "white", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "bold", display: "flex", justifyContent: "center", alignItems: "center", gap: "5px" }}>🖨️ In ảnh</button>
+                      <button className="hover-btn" onClick={() => setPreviewPhoto(photo)} style={{ display: "flex", justifyContent: "center", alignItems: "center", width: "40px", background: "#3b82f6", color: "white", borderRadius: "8px", border: "none", cursor: "pointer", fontSize: "18px", transition: "all 0.2s" }} title="Xem trước phóng to">👁️</button>
                       <a href={photo} download={`VietBooth_${activeTab}_${Date.now()}.png`} style={{ display: "flex", justifyContent: "center", alignItems: "center", width: "40px", background: "#e5e7eb", color: "#374151", borderRadius: "8px", textDecoration: "none", fontSize: "18px", transition: "all 0.2s" }} className="hover-btn" title="Tải về máy">⬇️</a>
                     </div>
                   </div>
@@ -74,6 +82,16 @@ const GalleryModal = ({ show, onClose, photos, rawPhotos, selectedPhotos, toggle
             </div>
           )}
         </div>
+
+        {/* --- Màn hình Modal xem trước ảnh Fullscreen --- */}
+        {previewPhoto && (
+          <div style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", background: "rgba(0,0,0,0.9)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1200 }}>
+            <div style={{ position: "relative", width: "90%", height: "90%", display: "flex", justifyContent: "center", alignItems: "center" }}>
+              <button className="hover-btn" onClick={() => setPreviewPhoto(null)} style={{ position: "absolute", top: "10px", right: "20px", background: "rgba(255,255,255,0.2)", color: "white", border: "none", borderRadius: "50%", width: "50px", height: "50px", fontSize: "24px", cursor: "pointer", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1210 }}>❌</button>
+              <img src={previewPhoto} alt="Preview" style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain", borderRadius: "10px", boxShadow: "0 10px 30px rgba(0,0,0,0.5)" }} />
+            </div>
+          </div>
+        )}
 
       </div>
     </div>

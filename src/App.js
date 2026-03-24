@@ -10,19 +10,14 @@ import QrModal from "./component/QrModal";
 import GalleryModal from "./component/GalleryModal";
 import DrivePickerModal from "./component/DrivePickerModal";
 import { BrowserRouter as Router, Routes, Route, useNavigate, Navigate } from "react-router-dom";
+import AppHeader from "./component/AppHeader";
+import FloatingQR from "./component/FloatingQR";
+import MobileQrButton from "./component/MobileQrButton";
+import FilterSelector from "./component/FilterSelector";
+import MobileControls from "./component/MobileControls";
+import DesktopControls from "./component/DesktopControls";
+import CaptureActionButtons from "./component/CaptureActionButtons";
 
-// Danh sách các Filter CSS miễn phí (Sử dụng CSS3 Filters siêu mượt, không cần cài thêm thư viện)
-const AVAILABLE_FILTERS = [
-  { id: "none", label: "Mặc định", filter: "none", icon: "🌈" },
-  { id: "beauty", label: "Làm đẹp", filter: "blur(0.5px) brightness(1.15) contrast(0.9) saturate(1.1)", icon: "🌸" },
-  { id: "grayscale", label: "Trắng đen", filter: "grayscale(100%)", icon: "🎞️" },
-  { id: "sepia", label: "Cổ điển", filter: "sepia(100%)", icon: "🟤" },
-  { id: "vintage", label: "Vintage", filter: "sepia(50%) hue-rotate(-30deg) saturate(140%)", icon: "📽️" },
-  { id: "cool", label: "Sắc Lạnh", filter: "hue-rotate(180deg) saturate(150%)", icon: "❄️" },
-  { id: "warm", label: "Ấm áp", filter: "sepia(30%) saturate(140%) hue-rotate(-15deg)", icon: "☀️" },
-  { id: "bright", label: "Tươi sáng", filter: "brightness(1.2) contrast(1.2) saturate(120%)", icon: "✨" },
-  { id: "fade", label: "Sương mù", filter: "opacity(0.8) saturate(80%) brightness(1.2)", icon: "🌫️" },
-];
 
 function PhotoboothMain() {
   const navigate = useNavigate();
@@ -55,6 +50,7 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
   const [rawPhotos, setRawPhotos] = useState([]);
   const [selectedPhotos, setSelectedPhotos] = useState([]);
   const [customFrames, setCustomFrames] = useState([]); // Chứa frames từ Backend
+  const [customFilters, setCustomFilters] = useState([]); // Chứa filters từ Backend
   const [settings, setSettings] = useState({
     countdown: 3,
     photoCount: 3,
@@ -87,6 +83,22 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
       }
     };
     fetchCustomFrames();
+  }, []);
+
+  // Tải danh sách Filter tùy chỉnh từ Backend
+  useEffect(() => {
+    const fetchCustomFilters = async () => {
+      try {
+        const response = await fetch(`${process.env.REACT_APP_API_URL || ""}/api/filters`);
+        const data = await response.json();
+        if (data.success) {
+          setCustomFilters(data.filters.map(f => ({ id: f._id, label: f.name, filter: f.filter, icon: f.icon || "✨" })));
+        }
+      } catch (error) {
+        console.error("Lỗi lấy danh sách filter từ backend:", error);
+      }
+    };
+    fetchCustomFilters();
   }, []);
 
   // Tự động sinh danh sách Frame mẫu và gộp với Frame tùy chỉnh từ Cơ sở dữ liệu
@@ -915,36 +927,20 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
         }
       `}</style>
       
-      <div className="app-header">
-        <h1 className="app-title">📸 VietBooth Studio</h1>
-        <div style={{ display: "flex", alignItems: "center", gap: isMobile ? "5px" : "15px" }}>
-          {/* Hiển thị tên người dùng */}
-          {localStorage.getItem("userName") && !isMobile && (
-            <span style={{ fontWeight: "bold", color: "#374151", fontSize: "16px" }}>👋 {localStorage.getItem("userName")}</span>
-          )}
-          <button onClick={() => navigate("/")} className="hover-btn" style={{ padding: isMobile ? "8px 12px" : "10px 20px", fontSize: isMobile ? "12px" : "14px", background: isMobile ? "#374151" : "#f3f4f6", color: isMobile ? "#fff" : "#374151", border: "none", borderRadius: "20px", fontWeight: "bold", cursor: "pointer" }}>
-            🏠 {isMobile ? "Home" : "Về trang chủ"}
-          </button>
-          {/* Nút Xóa ảnh */}
-          <button onClick={() => {
-            if (window.confirm("Bạn có chắc chắn muốn xóa toàn bộ ảnh đang lưu tạm thời không?")) {
-              setPhotos([]);
-              setRawPhotos([]);
-            }
-          }} className="hover-btn" style={{ padding: isMobile ? "8px 12px" : "10px 20px", fontSize: isMobile ? "12px" : "14px", background: "#fee2e2", color: "#ef4444", border: "none", borderRadius: "20px", fontWeight: "bold", cursor: "pointer" }}>
-            🗑️ {isMobile ? "Xóa" : "Xóa ảnh"}
-          </button>
-          {/* Nút Đăng xuất (Hiển thị nếu có token) */}
-          {localStorage.getItem("token") && (
-            <button onClick={() => {
-              localStorage.removeItem("token"); localStorage.removeItem("userRole"); localStorage.removeItem("userName");
-              navigate("/");
-            }} className="hover-btn" style={{ padding: isMobile ? "8px 12px" : "10px 20px", fontSize: isMobile ? "12px" : "14px", background: "#ef4444", color: "#fff", border: "none", borderRadius: "20px", fontWeight: "bold", cursor: "pointer" }}>
-              🚪 {isMobile ? "Thoát" : "Đăng xuất"}
-            </button>
-          )}
-        </div>
-      </div>
+      <AppHeader 
+        isMobile={isMobile} 
+        navigate={navigate} 
+        onClearPhotos={() => {
+          if (window.confirm("Bạn có chắc chắn muốn xóa toàn bộ ảnh đang lưu tạm thời không?")) {
+            setPhotos([]);
+            setRawPhotos([]);
+          }
+        }}
+        onLogout={() => {
+          localStorage.removeItem("token"); localStorage.removeItem("userRole"); localStorage.removeItem("userName");
+          navigate("/");
+        }}
+      />
 
       {/* --- PHÂN NHÁNH GIAO DIỆN MÁY TÍNH / ĐIỆN THOẠI --- */}
       {isMobile ? (
@@ -975,46 +971,24 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
           </div>
 
           {/* Danh sách Filters Cuộn Ngang */}
-          <div style={{ display: "flex", overflowX: "auto", gap: "10px", paddingBottom: "5px", scrollbarWidth: "none" }}>
-            {AVAILABLE_FILTERS.map(f => (
-              <div key={f.id} className="filter-btn" onClick={() => setSettings({ ...settings, filter: f.filter })} style={{ flex: "0 0 auto", padding: "8px 16px", background: settings.filter === f.filter ? "#e0e7ff" : "#374151", color: settings.filter === f.filter ? "#4f46e5" : "#e5e7eb", borderRadius: "20px", fontSize: "13px", display: "flex", alignItems: "center", gap: "6px" }}>
-                <span>{f.icon}</span> {f.label}
-              </div>
-            ))}
-          </div>
+          <FilterSelector settings={settings} setSettings={setSettings} isMobile={true} />
+          <FilterSelector settings={settings} setSettings={setSettings} isMobile={true} customFilters={customFilters} />
 
           {/* Hệ thống Nút điều khiển dạng Lưới (Grid) */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
-            <button onClick={() => setShowSettingsModal(true)} style={{ padding: "12px", background: "#374151", color: "#60a5fa", border: "none", borderRadius: "12px", fontWeight: "bold", fontSize: "14px" }}>⚙️ Cài đặt</button>
-            <button onClick={() => setShowLayoutModal(true)} style={{ padding: "12px", background: "#374151", color: "#fbbf24", border: "none", borderRadius: "12px", fontWeight: "bold", fontSize: "14px" }}>📐 Layout</button>
-            <button onClick={() => setShowFrameModal(true)} style={{ padding: "12px", background: "#374151", color: "#a78bfa", border: "none", borderRadius: "12px", fontWeight: "bold", fontSize: "14px" }}>🖼️ Frame</button>
-            <button onClick={() => setShowGalleryModal(true)} style={{ padding: "12px", background: "#374151", color: "#34d399", border: "none", borderRadius: "12px", fontWeight: "bold", fontSize: "14px" }}>📂 Gallery</button>
-          </div>
+          <MobileControls 
+            onOpenSettings={() => setShowSettingsModal(true)}
+            onOpenLayout={() => setShowLayoutModal(true)}
+            onOpenFrame={() => setShowFrameModal(true)}
+            onOpenGallery={() => setShowGalleryModal(true)}
+          />
 
           {/* Nút xem QR (Thu gọn thành Button thay vì trôi nổi chiếm diện tích trên màn hình bé) */}
-          {settings.useDrive && settings.driveFolderId && driveFolders.find(f => f.id === settings.driveFolderId) && (
-            <button onClick={() => showSelectedFolderQr(settings.driveFolderId)} style={{ width: "100%", padding: "12px", background: "#1f2937", color: "#f9fafb", border: "1px solid #4b5563", borderRadius: "12px", fontWeight: "bold" }}>
-              📲 Xem QR Album Sự Kiện
-            </button>
-          )}
+          <MobileQrButton settings={settings} driveFolders={driveFolders} showSelectedFolderQr={showSelectedFolderQr} />
 
           {/* Nút bấm Chụp ảnh Khổng lồ */}
           {stream && (
             <div style={{ marginTop: "auto", paddingTop: "10px", paddingBottom: "20px" }}>
-              {!isSessionActive ? (
-                <div style={{ display: "flex", gap: "10px" }}>
-                  <button onClick={captureWithSettings} style={{ flex: 1, padding: "16px", fontSize: "18px", fontWeight: "900", color: "#fff", background: "linear-gradient(135deg, #ff0844 0%, #ffb199 100%)", border: "none", borderRadius: "30px", boxShadow: "0 10px 20px rgba(255, 8, 68, 0.3)", textTransform: "uppercase" }}>
-                    {settings.interval === 0 && currentSessionPhotos.length > 0 ? "📸 CHỤP TIẾP" : "📸 BẮT ĐẦU"}
-                  </button>
-                  {settings.interval === 0 && currentSessionPhotos.length > 0 && (
-                    <button onClick={cancelSession} style={{ padding: "0 25px", fontSize: "16px", fontWeight: "bold", color: "#ef4444", background: "#fee2e2", border: "none", borderRadius: "30px" }}>❌</button>
-                  )}
-                </div>
-              ) : (
-                <button onClick={cancelSession} style={{ width: "100%", padding: "16px", fontSize: "18px", fontWeight: "900", color: "#fff", background: "#ef4444", border: "none", borderRadius: "30px", boxShadow: "0 10px 20px rgba(239, 68, 68, 0.3)", textTransform: "uppercase" }}>
-                  ❌ HỦY CHỤP
-                </button>
-              )}
+              <CaptureActionButtons isMobile={true} isSessionActive={isSessionActive} captureWithSettings={captureWithSettings} cancelSession={cancelSession} settings={settings} currentSessionPhotos={currentSessionPhotos} />
             </div>
           )}
         </div>
@@ -1023,45 +997,15 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
         <div className="main-card">
         
         {/* Mã QR Album hiển thị cố định trên màn hình */}
-        {settings.useDrive && settings.driveFolderId && driveFolders.find(f => f.id === settings.driveFolderId) && (
-          <div className="floating-qr" style={{ background: "#fff", padding: "15px", borderRadius: "16px", boxShadow: "0 10px 30px rgba(0,0,0,0.2)", textAlign: "center", border: "4px solid #4f46e5" }}>
-            <div style={{ fontSize: "16px", fontWeight: "900", color: "#4f46e5", marginBottom: "10px", textTransform: "uppercase" }}>📸 Album Sự kiện</div>
-            <img src={`${process.env.REACT_APP_QR_API_URL || "https://api.qrserver.com/v1/create-qr-code/"}?size=150x150&data=${encodeURIComponent(driveFolders.find(f => f.id === settings.driveFolderId)?.webViewLink || `https://drive.google.com/drive/folders/${settings.driveFolderId}?usp=sharing`)}`} alt="Album QR" style={{ width: "150px", height: "150px", display: "block", margin: "0 auto", borderRadius: "8px" }} />
-            <div style={{ fontSize: "13px", color: "#4b5563", marginTop: "10px", fontWeight: "bold" }}>Rê chuột vào để phóng to</div>
-          </div>
-        )}
+        <FloatingQR settings={settings} driveFolders={driveFolders} />
 
         <div className="camera-mode" style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
-          <div className="controls-container" style={{ marginBottom: "30px", display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "15px" }}>
-            <button 
-              className="hover-btn"
-              onClick={() => setShowSettingsModal(true)} 
-              style={{ padding: "12px 24px", fontSize: "16px", fontWeight: "bold", color: "#4f46e5", backgroundColor: "#e0e7ff", border: "none", borderRadius: "30px", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}
-            >
-              ⚙️ Cài đặt
-            </button>
-            <button 
-              className="hover-btn"
-              onClick={() => setShowLayoutModal(true)} 
-              style={{ padding: "12px 24px", fontSize: "16px", fontWeight: "bold", color: "#f59e0b", backgroundColor: "#fef3c7", border: "none", borderRadius: "30px", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}
-            >
-              📐 Chọn Layout
-            </button>
-            <button 
-              className="hover-btn"
-              onClick={() => setShowFrameModal(true)} 
-              style={{ padding: "12px 24px", fontSize: "16px", fontWeight: "bold", color: "#8b5cf6", backgroundColor: "#ede9fe", border: "none", borderRadius: "30px", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}
-            >
-              🖼️ Chọn Frame
-            </button>
-            <button 
-              className="hover-btn"
-              onClick={() => setShowGalleryModal(true)} 
-              style={{ padding: "12px 24px", fontSize: "16px", fontWeight: "bold", color: "#10b981", backgroundColor: "#d1fae5", border: "none", borderRadius: "30px", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}
-            >
-              📂 Gallery
-            </button>
-          </div>
+          <DesktopControls 
+            onOpenSettings={() => setShowSettingsModal(true)}
+            onOpenLayout={() => setShowLayoutModal(true)}
+            onOpenFrame={() => setShowFrameModal(true)}
+            onOpenGallery={() => setShowGalleryModal(true)}
+          />
 
           <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "20px", alignItems: "stretch", width: "100%" }}>
             
@@ -1105,35 +1049,14 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
             </div>
 
             {/* --- Thanh Sidebar Cuộn Chọn Filter --- */}
-            <div className="filter-sidebar" style={{ display: "flex", flexDirection: "column", gap: "10px", maxHeight: `${PHOTO_HEIGHT}px`, overflowY: "auto", paddingRight: "10px" }}>
-              {AVAILABLE_FILTERS.map(f => (
-                <div key={f.id} className="filter-btn" onClick={() => setSettings({ ...settings, filter: f.filter })} style={{ background: settings.filter === f.filter ? "#e0e7ff" : "#f9fafb", color: settings.filter === f.filter ? "#4f46e5" : "#4b5563", border: settings.filter === f.filter ? "2px solid #4f46e5" : "2px solid #e5e7eb" }}>
-                  <span style={{ fontSize: "20px" }}>{f.icon}</span>
-                  {f.label}
-                </div>
-              ))}
-            </div>
+            <FilterSelector settings={settings} setSettings={setSettings} isMobile={false} maxHeight={`${PHOTO_HEIGHT}px`} />
+            <FilterSelector settings={settings} setSettings={setSettings} isMobile={false} maxHeight={`${PHOTO_HEIGHT}px`} customFilters={customFilters} />
 
           </div>
 
           {stream && (
             <div className="booth-footer" style={{ display: "flex", justifyContent: "center", marginTop: "40px", gap: "15px" }}>
-              {!isSessionActive ? (
-                <>
-                  <button onClick={captureWithSettings} className="hover-btn" style={{ padding: "20px 60px", fontSize: "24px", fontWeight: "900", color: "#fff", background: "linear-gradient(135deg, #ff0844 0%, #ffb199 100%)", border: "none", borderRadius: "50px", cursor: "pointer", boxShadow: "0 15px 30px rgba(255, 8, 68, 0.3)", textTransform: "uppercase", letterSpacing: "2px", display: "flex", alignItems: "center", gap: "10px" }}>
-                    {settings.interval === 0 && currentSessionPhotos.length > 0 ? "📸 CHỤP TIẾP" : "📸 START"}
-                  </button>
-                  {settings.interval === 0 && currentSessionPhotos.length > 0 && (
-                    <button onClick={cancelSession} className="hover-btn" style={{ padding: "20px 40px", fontSize: "18px", fontWeight: "bold", color: "#ef4444", background: "#fee2e2", border: "none", borderRadius: "50px", cursor: "pointer", textTransform: "uppercase" }}>
-                      ❌ Hủy
-                    </button>
-                  )}
-                </>
-              ) : (
-                <button onClick={cancelSession} className="hover-btn" style={{ padding: "20px 60px", fontSize: "24px", fontWeight: "900", color: "#fff", background: "#ef4444", border: "none", borderRadius: "50px", cursor: "pointer", boxShadow: "0 15px 30px rgba(239, 68, 68, 0.3)", textTransform: "uppercase", letterSpacing: "2px", display: "flex", alignItems: "center", gap: "10px" }}>
-                  ❌ HỦY CHỤP
-                </button>
-              )}
+              <CaptureActionButtons isMobile={false} isSessionActive={isSessionActive} captureWithSettings={captureWithSettings} cancelSession={cancelSession} settings={settings} currentSessionPhotos={currentSessionPhotos} />
             </div>
           )}
         </div>

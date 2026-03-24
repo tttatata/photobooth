@@ -47,7 +47,6 @@
     "timeago.js": "^4.0.2",
     "web-vitals": "^2.1.4"
   },
-  "proxy": "http://localhost:5000",
   "scripts": {
     "start": "set HTTPS=true&&react-scripts start",
     "build": "react-scripts build",
