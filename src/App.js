@@ -99,12 +99,16 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
 
   // Tự động lưu cài đặt vào bộ nhớ đệm (localStorage) mỗi khi có thay đổi
   useEffect(() => {
+    const settingsToSave = { ...settings };
+    delete settingsToSave.frame; // Chắc chắn 100% không lưu chuỗi ảnh khổng lồ
     try {
-      const settingsToSave = { ...settings };
-      delete settingsToSave.frame; // BỎ CHUỖI ẢNH KHỔNG LỒ RA ĐỂ KHÔNG BỊ TRÀN BỘ NHỚ LÚC LƯU
       localStorage.setItem("photoboothSettings", JSON.stringify(settingsToSave));
     } catch (e) {
-      console.warn("Không thể lưu settings:", e);
+      console.warn("Bộ nhớ trình duyệt đầy, đang thử dọn dẹp...", e);
+      try {
+        localStorage.removeItem("localPersonalFrame"); // Xóa bớt ảnh upload cục bộ để lấy chỗ trống
+        localStorage.setItem("photoboothSettings", JSON.stringify(settingsToSave));
+      } catch (err) { console.error("Hoàn toàn không thể lưu do lỗi trình duyệt:", err); }
     }
   }, [settings]);
 
@@ -768,8 +772,15 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
         offsetY = (PHOTO_HEIGHT - drawHeight) / 2;
       }
 
+      // Lật ngược ảnh ngang (Mirror) trước khi vẽ để giống hệt giao diện xem trước (như soi gương)
+      ctx.translate(canvas.width, 0);
+      ctx.scale(-1, 1);
+
       ctx.drawImage(video, offsetX, offsetY, drawWidth, drawHeight);
       
+      // Trả lại trạng thái mặc định của canvas để không làm hỏng thiết lập sau này
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+
       const dataUrl = canvas.toDataURL("image/png");
       
       // Tự động lưu từng bức ảnh gốc chưa ghép vào máy

@@ -16,7 +16,7 @@ const SettingsModal = ({ show, onClose, devices, selectedDevice, setSelectedDevi
 
         <div style={{ width: "100%", height: "180px", backgroundColor: "#111827", borderRadius: "8px", overflow: "hidden", display: "flex", justifyContent: "center", alignItems: "center", position: "relative" }}>
           {!stream && ( <div style={{ position: "absolute", color: "#9ca3af", textAlign: "center", zIndex: 1 }}><div style={{ fontSize: "24px", marginBottom: "5px" }}>📷</div>Vui lòng chọn camera</div> )}
-          <video ref={previewVideoRef} autoPlay muted playsInline style={{ height: "100%", maxWidth: "100%", objectFit: "contain", zIndex: 2, opacity: stream ? 1 : 0 }} />
+          <video ref={previewVideoRef} autoPlay muted playsInline style={{ height: "100%", maxWidth: "100%", objectFit: "contain", zIndex: 2, opacity: stream ? 1 : 0, transform: "scaleX(-1)" }} />
         </div>
         <div style={{ textAlign: "center", color: "#6b7280", fontSize: "12px", marginTop: "-5px", fontStyle: "italic" }}>Camera preview</div>
         
@@ -59,9 +59,17 @@ const SettingsModal = ({ show, onClose, devices, selectedDevice, setSelectedDevi
           </div>
         )}
 
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "10px" }}>
-          <button className="hover-btn" onClick={onClose} style={{ padding: "10px 20px", backgroundColor: "#e5e7eb", color: "#374151", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "bold" }}>Đóng</button>
-          <button className="hover-btn" onClick={onClose} style={{ padding: "10px 20px", backgroundColor: "#4f46e5", color: "white", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "bold", display: "flex", alignItems: "center", gap: "5px" }}>💾 Lưu cài đặt</button>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "10px", flexWrap: "wrap", gap: "10px" }}>
+          <button className="hover-btn" onClick={() => {
+            if (window.confirm("Hành động này sẽ XÓA TOÀN BỘ dữ liệu lỗi đang kẹt trong trình duyệt và tải lại trang. Bạn có chắc chắn?")) {
+              localStorage.clear(); sessionStorage.clear(); window.location.reload();
+            }
+          }} style={{ padding: "10px 15px", backgroundColor: "#fee2e2", color: "#ef4444", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "bold", fontSize: "12px" }}>🔄 Reset Dữ liệu lỗi</button>
+          
+          <div style={{ display: "flex", gap: "10px" }}>
+            <button className="hover-btn" onClick={onClose} style={{ padding: "10px 20px", backgroundColor: "#e5e7eb", color: "#374151", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "bold" }}>Đóng</button>
+            <button className="hover-btn" onClick={onClose} style={{ padding: "10px 20px", backgroundColor: "#4f46e5", color: "white", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "bold", display: "flex", alignItems: "center", gap: "5px" }}>💾 Hoàn tất</button>
+          </div>
         </div>
       </div>
     </div>
