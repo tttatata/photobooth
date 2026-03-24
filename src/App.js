@@ -77,15 +77,6 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
       if (data.success) {
           const framesList = data.frames.map(f => ({ id: f._id, src: f.image, label: f.name, layout: f.layout }));
           setCustomFrames(framesList);
-          
-          // Tự động khôi phục Frame từ Database nếu trước đó đã chọn
-          setSettings(prev => {
-            if (prev.frameId && prev.frameId !== "local" && !prev.frame) {
-              const matchedFrame = framesList.find(fr => fr.id === prev.frameId);
-              if (matchedFrame) return { ...prev, frame: matchedFrame.src };
-            }
-            return prev;
-          });
       }
     } catch (error) {
       console.error("Lỗi lấy danh sách frame từ backend:", error);
@@ -96,21 +87,6 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
   useEffect(() => {
     fetchCustomFrames();
   }, []);
-
-  // Tự động lưu cài đặt vào bộ nhớ đệm (localStorage) mỗi khi có thay đổi
-  useEffect(() => {
-    const settingsToSave = { ...settings };
-    delete settingsToSave.frame; // Chắc chắn 100% không lưu chuỗi ảnh khổng lồ
-    try {
-      localStorage.setItem("photoboothSettings", JSON.stringify(settingsToSave));
-    } catch (e) {
-      console.warn("Bộ nhớ trình duyệt đầy, đang thử dọn dẹp...", e);
-      try {
-        localStorage.removeItem("localPersonalFrame"); // Xóa bớt ảnh upload cục bộ để lấy chỗ trống
-        localStorage.setItem("photoboothSettings", JSON.stringify(settingsToSave));
-      } catch (err) { console.error("Hoàn toàn không thể lưu do lỗi trình duyệt:", err); }
-    }
-  }, [settings]);
 
   // Tự động sinh danh sách Frame mẫu và gộp với Frame tùy chỉnh từ Cơ sở dữ liệu
   const sampleFrames = useMemo(() => {
@@ -618,7 +594,6 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
         } 
       });
       setStream(s);
-      localStorage.setItem("selectedCameraId", id); // GHI NHỚ MÁY ẢNH VÀO BỘ NHỚ!
       if (videoRef.current) {
         videoRef.current.srcObject = s;
       }
