@@ -17,6 +17,8 @@ const LayoutGuide = ({ title, width, height, children, details }) => (
 
 const FrameModal = ({ show, onClose, settings, setSettings, sampleFrames }) => {
   const [showFrameInfo, setShowFrameInfo] = useState(false);
+  const [localPersonalFrame, setLocalPersonalFrame] = useState(() => localStorage.getItem("localPersonalFrame") || null);
+
   if (!show) return null;
   return (
     <div style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", background: "rgba(0,0,0,0.6)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1100 }}>
@@ -25,12 +27,34 @@ const FrameModal = ({ show, onClose, settings, setSettings, sampleFrames }) => {
         <h2 style={{ marginTop: 0 }}>🖼️ Chọn Frame</h2>
         
         <label style={{ fontWeight: "bold", fontSize: "16px" }}>✨ Kho Frame của hệ thống:</label>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: "15px", overflowY: "auto", padding: "10px", maxHeight: "55vh", background: "#f9fafb", borderRadius: "8px", border: "1px solid #e5e7eb" }}>
+        <div className="custom-scrollbar" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: "15px", overflowY: "auto", padding: "10px", maxHeight: "55vh", background: "#f9fafb", borderRadius: "8px", border: "1px solid #e5e7eb" }}>
           <div onClick={() => setSettings({...settings, frame: null})} className="hover-btn" style={{ position: "relative", border: !settings.frame ? "3px solid #8b5cf6" : "1px solid #d1d5db", borderRadius: "10px", cursor: "pointer", padding: "10px", background: "#fff", display: "flex", flexDirection: "column", opacity: settings.frame ? 0.6 : 1, transition: "all 0.3s ease", boxShadow: !settings.frame ? "0 4px 10px rgba(139, 92, 246, 0.3)" : "none" }}>
             {!settings.frame && <div style={{ position: "absolute", top: "8px", right: "8px", background: "#10b981", color: "white", borderRadius: "50%", width: "26px", height: "26px", display: "flex", justifyContent: "center", alignItems: "center", fontSize: "14px", fontWeight: "bold", zIndex: 10 }}>✓</div>}
             <div style={{ height: "180px", display: "flex", justifyContent: "center", alignItems: "center", background: "#f3f4f6", borderRadius: "6px", fontSize: "40px", border: "2px dashed #9ca3af" }}>🚫</div>
             <div style={{ fontSize: "14px", textAlign: "center", marginTop: "10px", fontWeight: "bold", color: "#374151" }}>Không dùng</div>
           </div>
+          {localPersonalFrame && (
+            <div onClick={() => setSettings({...settings, frame: settings.frame === localPersonalFrame ? null : localPersonalFrame})} className="hover-btn" style={{ position: "relative", border: settings.frame === localPersonalFrame ? "3px solid #8b5cf6" : "1px solid #d1d5db", borderRadius: "10px", cursor: "pointer", padding: "10px", background: "#fff", display: "flex", flexDirection: "column", opacity: settings.frame && settings.frame !== localPersonalFrame ? 0.6 : 1, filter: settings.frame && settings.frame !== localPersonalFrame ? "grayscale(50%)" : "none", transition: "all 0.3s ease", boxShadow: settings.frame === localPersonalFrame ? "0 4px 10px rgba(139, 92, 246, 0.3)" : "none" }}>
+              {settings.frame === localPersonalFrame && <div style={{ position: "absolute", top: "8px", right: "8px", background: "#10b981", color: "white", borderRadius: "50%", width: "26px", height: "26px", display: "flex", justifyContent: "center", alignItems: "center", fontSize: "14px", fontWeight: "bold", zIndex: 10 }}>✓</div>}
+              <div style={{ position: "absolute", top: "8px", left: "8px", background: "#3b82f6", color: "white", padding: "2px 6px", borderRadius: "6px", fontSize: "10px", fontWeight: "bold", zIndex: 10 }}>Thiết kế tải lên</div>
+              
+              <button 
+                onClick={(e) => { 
+                  e.stopPropagation(); 
+                  if (window.confirm("Bạn có chắc chắn muốn xóa Frame này khỏi máy?")) {
+                    localStorage.removeItem("localPersonalFrame");
+                    setLocalPersonalFrame(null);
+                    if (settings.frame === localPersonalFrame) setSettings({...settings, frame: null});
+                  }
+                }} 
+                style={{ position: "absolute", bottom: "40px", right: "8px", background: "#ef4444", color: "white", border: "none", borderRadius: "50%", width: "26px", height: "26px", cursor: "pointer", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 10, fontSize: "12px" }}
+                title="Xóa frame"
+              >🗑️</button>
+
+              <img src={localPersonalFrame} alt="Local Frame" style={{ width: "100%", height: "180px", objectFit: "contain", borderRadius: "6px", background: "#e5e7eb" }} />
+              <div style={{ fontSize: "14px", textAlign: "center", marginTop: "10px", fontWeight: "bold", color: "#111827", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }} title="Frame của bạn">Frame của bạn</div>
+            </div>
+          )}
           {sampleFrames.map(f => (
             <div key={f.id} onClick={() => setSettings({...settings, frame: settings.frame === f.src ? null : f.src})} className="hover-btn" style={{ position: "relative", border: settings.frame === f.src ? "3px solid #8b5cf6" : "1px solid #d1d5db", borderRadius: "10px", cursor: "pointer", padding: "10px", background: "#fff", display: "flex", flexDirection: "column", opacity: settings.frame && settings.frame !== f.src ? 0.6 : 1, filter: settings.frame && settings.frame !== f.src ? "grayscale(50%)" : "none", transition: "all 0.3s ease", boxShadow: settings.frame === f.src ? "0 4px 10px rgba(139, 92, 246, 0.3)" : "none" }}>
               {settings.frame === f.src && <div style={{ position: "absolute", top: "8px", right: "8px", background: "#10b981", color: "white", borderRadius: "50%", width: "26px", height: "26px", display: "flex", justifyContent: "center", alignItems: "center", fontSize: "14px", fontWeight: "bold", zIndex: 10 }}>✓</div>}
@@ -49,7 +73,7 @@ const FrameModal = ({ show, onClose, settings, setSettings, sampleFrames }) => {
         </div>
 
         {showFrameInfo && (
-          <div style={{ background: "#f3f4f6", padding: "15px", borderRadius: "8px", overflowY: "auto", flex: 1 }}>
+          <div className="custom-scrollbar" style={{ background: "#f3f4f6", padding: "15px", borderRadius: "8px", overflowY: "auto", flex: 1 }}>
             <h3 style={{ marginTop: 0, fontSize: "16px", color: "#111827", borderBottom: "2px solid #8b5cf6", paddingBottom: "5px", display: "inline-block" }}>📐 Thông số Thiết kế Frame Chuẩn</h3>
             <p style={{ fontSize: "13px", color: "#4b5563", marginBottom: "15px" }}>Thiết kế file PNG có nền trong suốt ở các "Ô ảnh" để lộ hình chụp bên dưới.</p>
             
@@ -97,7 +121,28 @@ const FrameModal = ({ show, onClose, settings, setSettings, sampleFrames }) => {
           </div>
         )}
 
-        <input type="file" accept="image/png" onChange={(e) => { if (e.target.files[0]) { setSettings({ ...settings, frame: URL.createObjectURL(e.target.files[0]) }); } }} style={{ padding: "10px", border: "1px dashed #ccc", borderRadius: "8px" }} />
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "10px" }}>
+          <input type="file" accept="image/png" onChange={(e) => { 
+            const file = e.target.files[0];
+            if (file) { 
+              const reader = new FileReader();
+              reader.onloadend = () => {
+                const base64String = reader.result;
+                try {
+                  localStorage.setItem("localPersonalFrame", base64String); // Lưu vĩnh viễn vào trình duyệt
+                  setLocalPersonalFrame(base64String);
+                  setSettings({ ...settings, frame: base64String });
+                } catch (err) {
+                  alert("File quá lớn để lưu trữ dài hạn! Frame vẫn có thể dùng tạm, nhưng sẽ mất khi tải lại trang.");
+                  setLocalPersonalFrame(base64String);
+                  setSettings({ ...settings, frame: base64String });
+                }
+              };
+              reader.readAsDataURL(file);
+            } 
+          }} style={{ flex: 1, padding: "10px", border: "1px dashed #ccc", borderRadius: "8px", cursor: "pointer" }} />
+        </div>
+        <p style={{ fontSize: "13px", color: "#6b7280", margin: "5px 0 0 0" }}>* Frame tải lên sẽ được lưu trên trình duyệt của bạn (không mất khi tải lại trang).</p>
 
         <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "auto", paddingTop: "10px" }}>
           <button className="hover-btn" onClick={onClose} style={{ padding: "10px 20px", background: "#e5e7eb", color: "#374151", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "bold" }}>Đóng</button>

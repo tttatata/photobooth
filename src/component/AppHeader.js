@@ -1,6 +1,6 @@
 import React from "react";
 
-const AppHeader = ({ isMobile, navigate, onClearPhotos, onLogout }) => {
+const AppHeader = ({ isMobile, navigate, onLogout }) => {
   const userName = localStorage.getItem("userName");
   const hasToken = !!localStorage.getItem("token");
 
@@ -13,9 +13,6 @@ const AppHeader = ({ isMobile, navigate, onClearPhotos, onLogout }) => {
         )}
         <button onClick={() => navigate("/")} className="hover-btn" style={{ padding: isMobile ? "8px 12px" : "10px 20px", fontSize: isMobile ? "12px" : "14px", background: isMobile ? "#374151" : "#f3f4f6", color: isMobile ? "#fff" : "#374151", border: "none", borderRadius: "20px", fontWeight: "bold", cursor: "pointer" }}>
           🏠 {isMobile ? "Home" : "Về trang chủ"}
-        </button>
-        <button onClick={onClearPhotos} className="hover-btn" style={{ padding: isMobile ? "8px 12px" : "10px 20px", fontSize: isMobile ? "12px" : "14px", background: "#fee2e2", color: "#ef4444", border: "none", borderRadius: "20px", fontWeight: "bold", cursor: "pointer" }}>
-          🗑️ {isMobile ? "Xóa" : "Xóa ảnh"}
         </button>
         {hasToken && (
           <button onClick={onLogout} className="hover-btn" style={{ padding: isMobile ? "8px 12px" : "10px 20px", fontSize: isMobile ? "12px" : "14px", background: "#ef4444", color: "#fff", border: "none", borderRadius: "20px", fontWeight: "bold", cursor: "pointer" }}>

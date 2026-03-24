@@ -52,7 +52,7 @@ const GalleryModal = ({ show, onClose, photos, rawPhotos, selectedPhotos, toggle
         </div>
 
         {/* Image Grid */}
-        <div style={{ flex: 1, overflowY: "auto", padding: "30px", background: "#f9fafb" }}>
+        <div className="custom-scrollbar" style={{ flex: 1, overflowY: "auto", padding: "30px", background: "#f9fafb" }}>
           {displayPhotos.length === 0 ? (
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", color: "#9ca3af" }}>
               <div style={{ fontSize: "60px", marginBottom: "15px" }}>📭</div>

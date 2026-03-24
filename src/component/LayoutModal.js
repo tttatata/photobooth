@@ -13,7 +13,7 @@ const LayoutModal = ({ show, onClose, settings, setSettings }) => {
   ];
   return (
     <div style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", background: "rgba(0,0,0,0.6)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1100 }}>
-      <div style={{ background: "#fff", padding: "25px", borderRadius: "12px", width: "90%", maxWidth: "600px", display: "flex", flexDirection: "column", gap: "15px", boxShadow: "0 10px 25px rgba(0,0,0,0.2)" }}>
+      <div className="custom-scrollbar" style={{ background: "#fff", padding: "25px", borderRadius: "12px", width: "90%", maxWidth: "600px", maxHeight: "90vh", overflowY: "auto", display: "flex", flexDirection: "column", gap: "15px", boxShadow: "0 10px 25px rgba(0,0,0,0.2)" }}>
         <h2 style={{ marginTop: 0, textAlign: "center" }}>🖼️ Chọn mẫu in (Layout)</h2>
         <div style={{ display: "flex", flexWrap: "wrap", gap: "15px", justifyContent: "center" }}>
           {layouts.map(item => (

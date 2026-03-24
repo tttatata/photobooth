@@ -31,7 +31,7 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
   const [showDrivePickerModal, setShowDrivePickerModal] = useState(false);
   const [folderQrLink, setFolderQrLink] = useState("");
 
-  const [accessToken, setAccessToken] = useState(null); // Token Google Drive
+  const [accessToken, setAccessToken] = useState(() => sessionStorage.getItem("gdriveToken") || null); // Token Google Drive
 
   // State kiểm tra giao diện Mobile / Desktop
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 800);
@@ -50,16 +50,26 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
   const [rawPhotos, setRawPhotos] = useState([]);
   const [selectedPhotos, setSelectedPhotos] = useState([]);
   const [customFrames, setCustomFrames] = useState([]); // Chứa frames từ Backend
-  const [settings, setSettings] = useState({
-    countdown: 3,
-    photoCount: 3,
-    layout: "vertical-3", // Mặc định là 3 ảnh dọc
-    interval: 2,
-    filter: "none",
-    frame: null,
-    useDrive: false, // Bật tắt lưu Google Drive
-    driveFolderId: "", // Thư mục Drive lưu ảnh
-    uploadRawPhotos: false, // Bật tắt lưu ảnh lẻ chưa ghép lên Drive
+  const [settings, setSettings] = useState(() => {
+    const saved = localStorage.getItem("photoboothSettings");
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error("Lỗi parse settings:", e);
+      }
+    }
+    return {
+      countdown: 3,
+      photoCount: 3,
+      layout: "vertical-3", // Mặc định là 3 ảnh dọc
+      interval: 2,
+      filter: "none",
+      frame: null,
+      useDrive: false, // Bật tắt lưu Google Drive
+      driveFolderId: "", // Thư mục Drive lưu ảnh
+      uploadRawPhotos: false, // Bật tắt lưu ảnh lẻ chưa ghép lên Drive
+    };
   });
   const [directoryHandle, setDirectoryHandle] = useState(null);
   const [driveFolders, setDriveFolders] = useState([]);
@@ -67,6 +77,27 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const previewVideoRef = useRef(null);
+
+  // Tự động khôi phục thư mục lưu ảnh cục bộ (nếu có) từ IndexedDB khi F5
+  useEffect(() => {
+    try {
+      const request = indexedDB.open("PhotoboothDB", 1);
+      request.onupgradeneeded = (e) => {
+        const db = e.target.result;
+        if (!db.objectStoreNames.contains("handles")) db.createObjectStore("handles");
+      };
+      request.onsuccess = (e) => {
+        const db = e.target.result;
+        if (!db.objectStoreNames.contains("handles")) return;
+        const tx = db.transaction("handles", "readonly");
+        const store = tx.objectStore("handles");
+        const getReq = store.get("directoryHandle");
+        getReq.onsuccess = () => {
+          if (getReq.result) setDirectoryHandle(getReq.result);
+        };
+      };
+    } catch (err) { console.error("Lỗi lấy thư mục từ IndexedDB:", err); }
+  }, []);
 
   // Tải danh sách Frame từ Backend (Database) khi khởi động màn hình chụp
   useEffect(() => {
@@ -83,6 +114,15 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
     };
     fetchCustomFrames();
   }, []);
+
+  // Tự động lưu cài đặt vào bộ nhớ đệm (localStorage) mỗi khi có thay đổi
+  useEffect(() => {
+    try {
+      localStorage.setItem("photoboothSettings", JSON.stringify(settings));
+    } catch (e) {
+      console.warn("Không thể lưu settings (có thể do dung lượng Frame quá lớn):", e);
+    }
+  }, [settings]);
 
   // Tự động sinh danh sách Frame mẫu và gộp với Frame tùy chỉnh từ Cơ sở dữ liệu
   const sampleFrames = useMemo(() => {
@@ -277,6 +317,7 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
       callback: async (response) => {
         if (response.access_token) {
           setAccessToken(response.access_token);
+          sessionStorage.setItem("gdriveToken", response.access_token);
           setSettings({ ...settings, useDrive: true });
           
           try {
@@ -355,6 +396,14 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
     try {
       const handle = await window.showDirectoryPicker();
       setDirectoryHandle(handle);
+      
+      // Lưu lại Handle vào IndexedDB để không bị mất khi F5
+      const request = indexedDB.open("PhotoboothDB", 1);
+      request.onsuccess = (e) => {
+        const db = e.target.result;
+        const tx = db.transaction("handles", "readwrite");
+        tx.objectStore("handles").put(handle, "directoryHandle");
+      };
     } catch (error) {
       console.error("Lỗi chọn thư mục:", error);
     }
@@ -364,6 +413,15 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
   const saveImageToLocal = async (dataUrl, filename) => {
     if (!directoryHandle) return;
     try {
+      // Yêu cầu quyền ghi lại nếu người dùng vừa F5 tải lại trang
+      if ((await directoryHandle.queryPermission({ mode: 'readwrite' })) !== 'granted') {
+        const permission = await directoryHandle.requestPermission({ mode: 'readwrite' });
+        if (permission !== 'granted') {
+          console.error("Không có quyền ghi vào thư mục");
+          return;
+        }
+      }
+
       const fileHandle = await directoryHandle.getFileHandle(filename, { create: true });
       const writable = await fileHandle.createWritable();
       const response = await fetch(dataUrl);
@@ -908,17 +966,29 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
           transform: translateY(-2px);
           box-shadow: 0 4px 6px rgba(0,0,0,0.05);
         }
+
+        /* --- Tùy chỉnh thanh cuộn cho các Modal trên thiết bị di động --- */
+        .custom-scrollbar {
+          -webkit-overflow-scrolling: touch;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 6px;
+          height: 6px;
+          display: block !important; /* Ép hiển thị trên Mobile */
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: rgba(0,0,0,0.05);
+          border-radius: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #9ca3af;
+          border-radius: 8px;
+        }
       `}</style>
       
       <AppHeader 
         isMobile={isMobile} 
         navigate={navigate} 
-        onClearPhotos={() => {
-          if (window.confirm("Bạn có chắc chắn muốn xóa toàn bộ ảnh đang lưu tạm thời không?")) {
-            setPhotos([]);
-            setRawPhotos([]);
-          }
-        }}
         onLogout={() => {
           localStorage.removeItem("token"); localStorage.removeItem("userRole"); localStorage.removeItem("userName");
           navigate("/");
@@ -947,6 +1017,7 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
               </div>
             )}
             <video ref={videoRef} autoPlay muted playsInline style={{ width: "100%", height: "100%", filter: settings.filter, display: stream ? "block" : "none", objectFit: "cover", opacity: isCameraLoading ? 0.3 : 1, transition: "opacity 0.3s" }} />
+            
             {isCapturing && <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", background: "rgba(0,0,0,0.8)", color: "white", padding: "12px 20px", borderRadius: "20px", fontSize: "18px", fontWeight: "bold", zIndex: 20 }}>📸 Đang chụp...</div>}
             {currentPhotoIndex !== null && <div style={{ position: "absolute", top: "10px", left: "50%", transform: "translateX(-50%)", background: "rgba(0,0,0,0.7)", color: "white", padding: "6px 12px", borderRadius: "15px", fontSize: "12px", fontWeight: "bold", zIndex: 10 }}>Chụp: {currentPhotoIndex} {typeof currentPhotoIndex === 'number' ? `/ ${settings.photoCount}` : ''}</div>}
             {countdownValue !== null && <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", fontSize: "60px", color: "white", textShadow: "0 2px 10px rgba(0,0,0,0.5)", fontWeight: "900", zIndex: 10 }}>{countdownValue}</div>}
@@ -990,7 +1061,7 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
           />
 
           <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "20px", alignItems: "stretch", width: "100%" }}>
-            
+
             {/* --- Video Preview --- */}
             <div className="video-wrapper" style={{ width: `${PHOTO_WIDTH}px`, height: `${PHOTO_HEIGHT}px`, backgroundColor: "#e5e7eb", display: "flex", justifyContent: "center", alignItems: "center" }}>
               {stream && <div className="live-badge">LIVE</div>}
@@ -1011,6 +1082,7 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
               )}
 
               <video ref={videoRef} autoPlay muted playsInline style={{ width: "100%", height: "100%", filter: settings.filter, display: stream ? "block" : "none", objectFit: "cover", opacity: isCameraLoading ? 0.3 : 1, transition: "opacity 0.3s" }} />
+
               {/* Overlays */}
               {isCapturing && (
                 <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", background: "rgba(0,0,0,0.8)", color: "white", padding: "20px 40px", borderRadius: "30px", fontSize: "30px", fontWeight: "bold", zIndex: 20, boxShadow: "0 10px 30px rgba(0,0,0,0.3)", backdropFilter: "blur(5px)" }}>
@@ -1078,7 +1150,7 @@ const [photoToPrint, setPhotoToPrint] = useState(null);
 
 function App() {
   return (
-    <Router>
+    <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <PhotoboothMain />
     </Router>
   );

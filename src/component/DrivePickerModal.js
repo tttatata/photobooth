@@ -41,7 +41,7 @@ const DrivePickerModal = ({ show, onClose, driveFolders, onSelectFolder, onCreat
           </button>
         </div>
 
-        <div style={{ flex: 1, overflowY: "auto", border: "1px solid #e5e7eb", borderRadius: "8px", padding: "10px", display: "flex", flexDirection: "column", gap: "5px", background: "#f9fafb", opacity: isCreating ? 0.6 : 1, pointerEvents: isCreating ? "none" : "auto" }}>
+        <div className="custom-scrollbar" style={{ flex: 1, overflowY: "auto", border: "1px solid #e5e7eb", borderRadius: "8px", padding: "10px", display: "flex", flexDirection: "column", gap: "5px", background: "#f9fafb", opacity: isCreating ? 0.6 : 1, pointerEvents: isCreating ? "none" : "auto" }}>
           <div onClick={() => { onSelectFolder(""); onClose(); }} className="hover-btn" style={{ padding: "15px", background: !selectedFolderId ? "#e0e7ff" : "#fff", borderRadius: "8px", cursor: "pointer", display: "flex", alignItems: "center", gap: "15px", border: !selectedFolderId ? "2px solid #4f46e5" : "1px solid #e5e7eb", transition: "all 0.2s" }}>
             <span style={{ fontSize: "24px" }}>🏠</span>
             <span style={{ fontWeight: "bold", color: "#374151", flex: 1 }}>Thư mục gốc (Mặc định)</span>
