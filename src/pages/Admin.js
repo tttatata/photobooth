@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { generateSampleFrame } from '../utils/helpers';
+import FilterManager from '../component/FilterManager';
 
 const Admin = ({ onBack }) => {
   const [activeTab, setActiveTab] = useState('users');
@@ -171,6 +172,7 @@ const Admin = ({ onBack }) => {
         <h2 style={{ color: "#10b981", textAlign: "center", marginBottom: "30px" }}>🛡️ Admin Panel</h2>
         <button onClick={() => setActiveTab('users')} style={{ background: activeTab === 'users' ? "#374151" : "transparent", border: "none", color: "white", padding: "15px", textAlign: "left", cursor: "pointer", borderRadius: "8px", fontSize: "16px" }}>👥 Quản lý người dùng</button>
         <button onClick={() => setActiveTab('frames')} style={{ background: activeTab === 'frames' ? "#374151" : "transparent", border: "none", color: "white", padding: "15px", textAlign: "left", cursor: "pointer", borderRadius: "8px", fontSize: "16px" }}>🖼️ Quản lý Frame mẫu</button>
+        <button onClick={() => setActiveTab('filters')} style={{ background: activeTab === 'filters' ? "#374151" : "transparent", border: "none", color: "white", padding: "15px", textAlign: "left", cursor: "pointer", borderRadius: "8px", fontSize: "16px" }}>✨ Quản lý Filter</button>
         <div style={{ marginTop: "auto" }}>
           <button onClick={handleLogout} style={{ background: "#ef4444", border: "none", color: "white", padding: "15px", width: "100%", cursor: "pointer", borderRadius: "8px", fontSize: "16px", fontWeight: "bold" }}>🚪 Đăng xuất</button>
         </div>
@@ -295,6 +297,9 @@ const Admin = ({ onBack }) => {
             </div>
 
           </div>
+        )}
+        {activeTab === 'filters' && (
+          <FilterManager />
         )}
       </div>
     </div>

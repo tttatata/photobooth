@@ -3,6 +3,7 @@ const cors = require("cors");
 const authRoutes = require("./routers/auth.routes");
 const userRoutes = require("./routers/user.routes");
 const frameRoutes = require("./routers/frame.routes");
+const filterRoutes = require("./controllers/filter.routes");
 
 const app = express();
 
@@ -15,6 +16,7 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/frames", frameRoutes);
+app.use("/api/filters", filterRoutes);
 
 // Test Route cơ bản
 
